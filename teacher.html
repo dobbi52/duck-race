@@ -131,6 +131,7 @@ function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','
 function err(m){$('err').textContent=m;}
 
 let uid=null;
+let code=null,roomRef=null,names=[],N=0,looks=[],claims={},phase='setup',clsName='',resultOrder=[];
 auth.onAuthStateChanged(u=>{if(u){uid=u.uid;if($('err').textContent.indexOf('연결')>=0)err('');const old=lsGet('duckrace_lastroom');if(old){db.ref('rooms/'+old).remove().catch(()=>{});lsSet('duckrace_lastroom','');}}});
 auth.signInAnonymously().catch(e=>{err((e.code==='auth/operation-not-allowed'||e.code==='auth/admin-restricted-operation')?'Firebase에서 익명 로그인이 꺼져 있어요. Authentication → 로그인 방법 → 익명을 켜 주세요.':'서버에 연결하지 못했어요: '+e.message);});
 
@@ -216,7 +217,6 @@ function duck(c,x,y,lk,flip,tm,ph){const p=PAL[lk.pal]||PAL[0];
 function heart(c,x,y){const s=[".k.k.","kRkRk","kRRRk",".kRk.","..k.."];s.forEach((r,ry)=>{for(let rx=0;rx<5;rx++){const ch=r[rx];if(ch==='.')continue;R(c,x+rx,y+ry,1,1,ch==='k'?'#3b2412':'#e5484d');}});R(c,x+1,y+1,1,1,'#ff9aa0');}
 
 /* ---------- 방 ---------- */
-let code=null,roomRef=null,names=[],N=0,looks=[],claims={},phase='setup',clsName='',resultOrder=[];
 function roomData(){const o={host:uid,createdAt:Date.now(),status:phase==='done'?'done':(phase==='race'||phase==='count')?'racing':'lobby',mode,looks:looks,claims:claims};if(phase!=='done')o.names=names;else o.result=resultOrder;return o;}
 $('mk').onclick=makeRoom;
 async function makeRoom(){
