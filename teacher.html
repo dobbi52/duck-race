@@ -62,6 +62,10 @@ textarea{width:100%;height:260px;font-size:15px;padding:8px;border:3px solid var
 .ctl .btn{font-size:13px;padding:4px 10px;border-width:2px}
 .ctl .sp{flex:1}
 .legend{font-size:12px;color:var(--bn)}
+.ab{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:6px;margin-bottom:6px}
+.ab button{font-size:15px;padding:7px 2px;background:#f6c97a;color:var(--br);border:3px solid var(--bn);border-radius:0;cursor:pointer}
+.ab button.out{background:#e2d7bf;color:#a89a80;border-color:#b9ab8c;text-decoration:line-through}
+.cnum{font-size:24px;min-width:72px;text-align:center}
 </style>
 </head>
 <body>
@@ -69,10 +73,16 @@ textarea{width:100%;height:260px;font-size:15px;padding:8px;border:3px solid var
 <div id="setup">
   <div class="title">오리 레이스</div>
   <div class="card">
+    <div class="row"><span class="lb">뽑기 방식</span><button class="btn pm" data-p="num">번호로</button><button class="btn pm" data-p="name">이름으로</button></div>
+    <div class="row" id="numBox"><span class="lb">우리 반 인원</span><button class="btn" id="cMinus">−</button><span class="cnum" id="cnum">25명</span><button class="btn" id="cPlus">+</button><span class="note" style="margin:0">최대 40명</span></div>
+    <div id="nameBox">
     <div class="row"><span class="lb">반 선택</span><select id="cls"></select><button class="btn" id="del">이 반 지우기</button></div>
     <div class="row"><span class="lb">반 이름</span><input type="text" id="cname" placeholder="6학년 2반" style="flex:1"><button class="btn" id="save">명단 저장</button></div>
     <div class="row" style="justify-content:space-between"><span class="lb">명단 (한 줄에 한 명)</span><span class="lb" id="ncount" style="text-align:right">0명</span></div>
     <textarea id="names" placeholder="김하늘&#10;이도윤&#10;박서연"></textarea>
+    </div>
+    <div class="row" style="margin-top:12px"><span class="lb">오늘 빠지는 친구</span><span class="note" style="margin:0" id="absNote"></span></div>
+    <div class="ab" id="ab"></div>
     <div class="row" style="margin-top:10px"><span class="lb">결과 방식</span>
       <button class="btn mb on" data-m="all">전체 순위</button><button class="btn mb" data-m="first">1등만</button><button class="btn mb" data-m="last">꼴등만</button></div>
     <div class="row" style="margin-top:14px"><button class="btn go" id="mk" style="font-size:18px;padding:10px 24px">방 만들기</button></div>
@@ -131,7 +141,7 @@ function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','
 function err(m){$('err').textContent=m;}
 
 let uid=null;
-let code=null,roomRef=null,names=[],N=0,looks=[],claims={},phase='setup',clsName='',resultOrder=[];
+let code=null,roomRef=null,names=[],nums=[],N=0,looks=[],claims={},phase='setup',clsName='',resultOrder=[];
 auth.onAuthStateChanged(u=>{if(u){uid=u.uid;if($('err').textContent.indexOf('연결')>=0)err('');const old=lsGet('duckrace_lastroom');if(old){db.ref('rooms/'+old).remove().catch(()=>{});lsSet('duckrace_lastroom','');}}});
 auth.signInAnonymously().catch(e=>{err((e.code==='auth/operation-not-allowed'||e.code==='auth/admin-restricted-operation')?'Firebase에서 익명 로그인이 꺼져 있어요. Authentication → 로그인 방법 → 익명을 켜 주세요.':'서버에 연결하지 못했어요: '+e.message);});
 
@@ -142,12 +152,23 @@ function saveClasses(){lsSet(LS,JSON.stringify(classes));}
 function fillSel(pick){const s=$('cls');s.innerHTML='<option value="">+ 새 반 만들기</option>'+Object.keys(classes).map(k=>'<option value="'+esc(k)+'">'+esc(k)+'</option>').join('');s.value=(pick&&classes[pick])?pick:'';}
 function loadClass(k){$('cname').value=k||'';$('names').value=k&&classes[k]?classes[k].names.join('\n'):'';cnt();}
 function parseNames(){return $('names').value.split('\n').map(s=>s.trim()).filter(Boolean);}
-function cnt(){$('ncount').textContent=parseNames().length+'명';}
+function cnt(){$('ncount').textContent=parseNames().length+'명';renderAbs();}
+let pickMode=lsGet('duckrace_pick')||'num',count=Math.min(40,Math.max(2,+(lsGet('duckrace_count')||25))),absent=new Set();
+function fullList(){return pickMode==='num'?Array.from({length:count},(_,i)=>(i+1)+'번'):parseNames();}
+function renderAbs(){const l=fullList();let n=0;$('ab').innerHTML=l.map((x,i)=>{const o=absent.has(x);if(!o)n++;return '<button data-k="'+esc(x)+'" class="'+(o?'out':'')+'">'+esc(pickMode==='num'?String(i+1):x)+'</button>';}).join('');
+ $('ab').querySelectorAll('button').forEach(b=>b.onclick=()=>{const k=b.dataset.k;absent.has(k)?absent.delete(k):absent.add(k);renderAbs();});
+ $('absNote').textContent='누르면 이번 경기에서 빠져요. 참가 '+n+'명';}
+function setPick(m){pickMode=m;lsSet('duckrace_pick',m);document.querySelectorAll('.pm').forEach(b=>b.classList.toggle('on',b.dataset.p===m));$('numBox').classList.toggle('hidden',m!=='num');$('nameBox').classList.toggle('hidden',m!=='name');renderAbs();}
+document.querySelectorAll('.pm').forEach(b=>b.onclick=()=>setPick(b.dataset.p));
+function setCount(c){count=Math.min(40,Math.max(2,c));lsSet('duckrace_count',count);$('cnum').textContent=count+'명';renderAbs();}
+$('cMinus').onclick=()=>setCount(count-1);$('cPlus').onclick=()=>setCount(count+1);
+function buildList(){const sel=fullList().map((n,i)=>({n,num:i+1})).filter(x=>!absent.has(x.n));return sel;}
 $('names').oninput=cnt;
 $('cls').onchange=()=>{const k=$('cls').value;loadClass(k);lsSet('duckrace_lastclass',k);};
 $('save').onclick=()=>{const k=$('cname').value.trim(),l=parseNames();if(!k)return err('반 이름을 적어 주세요');if(l.length<2)return err('이름을 두 명 이상 적어 주세요');const prev=classes[k]||{};classes[k]={names:l,looks:prev.looks||{}};saveClasses();fillSel(k);lsSet('duckrace_lastclass',k);err('명단을 저장했어요');};
 $('del').onclick=()=>{const k=$('cls').value;if(!k)return;if(!confirm(k+' 명단과 꾸민 오리 모양을 지울까요?'))return;delete classes[k];saveClasses();fillSel('');loadClass('');};
 fillSel(lsGet('duckrace_lastclass'));if($('cls').value)loadClass($('cls').value);
+$('cnum').textContent=count+'명';setPick(pickMode);
 
 let mode=lsGet('duckrace_mode')||'all';
 function setMode(m){mode=m;lsSet('duckrace_mode',m);document.querySelectorAll('.mb,.gb').forEach(b=>b.classList.toggle('on',b.dataset.m===m));
@@ -217,17 +238,18 @@ function duck(c,x,y,lk,flip,tm,ph){const p=PAL[lk.pal]||PAL[0];
 function heart(c,x,y){const s=[".k.k.","kRkRk","kRRRk",".kRk.","..k.."];s.forEach((r,ry)=>{for(let rx=0;rx<5;rx++){const ch=r[rx];if(ch==='.')continue;R(c,x+rx,y+ry,1,1,ch==='k'?'#3b2412':'#e5484d');}});R(c,x+1,y+1,1,1,'#ff9aa0');}
 
 /* ---------- 방 ---------- */
-function roomData(){const o={host:uid,createdAt:Date.now(),status:phase==='done'?'done':(phase==='race'||phase==='count')?'racing':'lobby',mode,looks:looks,claims:claims};if(phase!=='done')o.names=names;else o.result=resultOrder;return o;}
+function roomData(){const o={host:uid,createdAt:Date.now(),status:phase==='done'?'done':(phase==='race'||phase==='count')?'racing':'lobby',mode,looks:looks,claims:claims,nums:nums};if(phase!=='done')o.names=names;else o.result=resultOrder;return o;}
 $('mk').onclick=makeRoom;
 const DEMO=new URLSearchParams(location.search).has('demo');
 if(DEMO){$('mk').textContent='연습 시작';if(!parseNames().length)$('names').value=['김하늘','이도윤','박서연','최민준','정유진','한지호','윤서아','강하준','조예린','임시우','오지안','신도현','권나윤','황준서','송다은','류건우','배수아','전하람','고은찬','문채원','서지후','안소율','홍태윤','노아린','백승민'].join('\n');cnt();err('연습 모드예요. 서버 없이 화면만 미리 볼 수 있어요.');}
 async function makeRoom(){
- if(DEMO){const l=parseNames();if(l.length<2)return err('이름을 두 명 이상 적어 주세요');clsName=($('cname').value.trim()||'우리 반')+' (연습)';names=l;N=l.length;looks=names.map((n,i)=>defLook(i));claims={};code='연습';roomRef=null;resetRace();phase='lobby';showGame();$('lobby').classList.add('hidden');return;}
+ if(DEMO){const sl=buildList();if(sl.length<2)return err('두 명 이상 참가해야 해요');clsName=(pickMode==='num'?'번호 뽑기':($('cname').value.trim()||'우리 반'))+' (연습)';names=sl.map(x=>x.n);nums=sl.map(x=>x.num);N=names.length;looks=names.map((n,i)=>defLook(i));claims={};code='연습';roomRef=null;resetRace();phase='lobby';showGame();$('lobby').classList.add('hidden');return;}
  if(!uid)return err('서버에 연결하는 중이에요. 잠시 뒤 다시 눌러 주세요.');
- const l=parseNames();if(l.length<2)return err('이름을 두 명 이상 적어 주세요');if(l.length>40)return err('40명까지 할 수 있어요');
- clsName=$('cname').value.trim()||'우리 반';
- const prev=classes[clsName]||{};classes[clsName]={names:l,looks:prev.looks||{}};saveClasses();fillSel(clsName);lsSet('duckrace_lastclass',clsName);
- names=l;N=l.length;looks=names.map((n,i)=>{const s=classes[clsName].looks[n];const d0=defLook(i);return {pal:s?s.pal:d0.pal,acc:s?s.acc:d0.acc,ready:false};});
+ const sl=buildList();if(sl.length<2)return err('두 명 이상 참가해야 해요');if(sl.length>40)return err('40명까지 할 수 있어요');
+ if(pickMode==='num'){clsName='번호 뽑기';if(!classes[clsName])classes[clsName]={names:[],looks:{}};}
+ else{clsName=$('cname').value.trim()||'우리 반';const prev=classes[clsName]||{};classes[clsName]={names:parseNames(),looks:prev.looks||{}};fillSel(clsName);lsSet('duckrace_lastclass',clsName);}
+ saveClasses();
+ names=sl.map(x=>x.n);nums=sl.map(x=>x.num);N=names.length;looks=names.map((n,i)=>{const s=classes[clsName].looks[n];const d0=defLook(i);return {pal:s?s.pal:d0.pal,acc:s?s.acc:d0.acc,ready:false};});
  claims={};phase='setup';code=null;err('방을 만드는 중...');
  for(let k=0;k<15&&!code;k++){const c=String(1000+Math.floor(Math.random()*9000));
   try{const r=await db.ref('rooms/'+c).transaction(cur=>cur===null?roomData():undefined);if(r.committed)code=c;}catch(e){console.warn(e);}}
@@ -299,7 +321,7 @@ function finish(){phase='done';resultOrder=d.slice().sort((a,b)=>a.r-b.r).map(o=
  if(roomRef)roomRef.update({status:'done',result:resultOrder,mode,names:null}).catch(()=>{});
  setTimeout(()=>{if(phase==='done')showResult();},1500);updPanel();}
 function again(){resetRace();looks.forEach(l=>l.ready=false);phase='lobby';
- if(roomRef)roomRef.update({status:'lobby',names:names,looks:looks,state:null,result:null}).catch(()=>{});
+ if(roomRef)roomRef.update({status:'lobby',names:names,nums:nums,looks:looks,state:null,result:null}).catch(()=>{});
  if(!DEMO)$('lobby').classList.remove('hidden');updPanel();}
 $('bStart').onclick=start;$('bAgain').onclick=again;
 function showResult(){const o=resultOrder.map(i=>names[i]);let h,b;
@@ -321,7 +343,7 @@ function showGame(){$('setup').classList.add('hidden');$('game').classList.remov
  $('lurl').textContent=url.replace(/^https?:\/\//,'');$('qr').innerHTML='';
  try{new QRCode($('qr'),{text:url,width:256,height:256,correctLevel:QRCode.CorrectLevel.M});}catch(e){}
  document.querySelectorAll('#stage .tg,#stage .bb').forEach(e=>e.remove());tags=[];bbs=[];
- names.forEach((n,i)=>{const a=document.createElement('div');a.className='tg';a.textContent=i+1;st.appendChild(a);tags.push(a);const b=document.createElement('div');b.className='bb';st.appendChild(b);bbs.push(b);});
+ names.forEach((n,i)=>{const a=document.createElement('div');a.className='tg';a.textContent=nums[i]||i+1;st.appendChild(a);tags.push(a);const b=document.createElement('div');b.className='bb';st.appendChild(b);bbs.push(b);});
  $('lobby').classList.remove('hidden');updPanel();fit();}
 function fit(){const w=st.clientWidth||640;document.documentElement.style.setProperty('--u',(w/320)+'px');}
 window.addEventListener('resize',fit);document.addEventListener('fullscreenchange',fit);
@@ -366,7 +388,7 @@ function scene(){const c=Math.round(cam);cx.drawImage(bg,c,0,W,H,0,0,W,H);
  mx.fillStyle='#3b2412';mx.fillRect(Math.round(4+FX/WW*312),2,1,14);}
 
 function panel(){
- if(phase==='lobby'){let on=0,rd=0;$('rk').innerHTML=names.map((n,i)=>{const c=!!claims[i],r=c&&looks[i]&&looks[i].ready;if(c)on++;if(r)rd++;return '<span class="'+(r?'rd':c?'':'off')+'"><b>'+(i+1)+'</b>'+esc(n)+'</span>';}).join('');
+ if(phase==='lobby'){let on=0,rd=0;$('rk').innerHTML=names.map((n,i)=>{const c=!!claims[i],r=c&&looks[i]&&looks[i].ready;if(c)on++;if(r)rd++;return '<span class="'+(r?'rd':c?'':'off')+'"><b>'+(nums[i]||i+1)+'</b>'+esc(pickMode==='num'&&/^\d+번$/.test(n)?'':n)+'</span>';}).join('');
   $('lcnt').textContent='접속 '+on+' · 준비 '+rd+' / '+N;$('lead').textContent='대기 중';$('prog').textContent='0m / 200m';return;}
  const o=d.slice().sort((a,b)=>a.fin&&b.fin?a.r-b.r:a.fin?-1:b.fin?1:b.p-a.p);
  $('rk').innerHTML=o.map((x,i)=>'<span class="'+(x.fin?'f':'')+'"><b>'+(i+1)+'</b>'+esc(x.n)+'</span>').join('');

@@ -129,7 +129,7 @@ function duck(c,x,y,pal,acc){const p=PAL[pal]||PAL[0];
  case 'bow':A(2,5,3,2,'#8e4ec6');A(1,5,1,1,'#8e4ec6');break;}}
 
 /* ---------- 접속 ---------- */
-let uid=null,code=null,roomRef=null,room=null,names=[],me=-1,myLook={pal:0,acc:1,ready:false};
+let uid=null,code=null,roomRef=null,room=null,names=[],nums=[],me=-1,myLook={pal:0,acc:1,ready:false};
 const q=new URLSearchParams(location.search).get('room');if(q)$('code').value=q.replace(/\D/g,'').slice(0,4);
 auth.onAuthStateChanged(u=>{if(u){uid=u.uid;if($('jerr').textContent.indexOf('연결')>=0)$('jerr').textContent='';if(q&&!code)join();}});
 auth.signInAnonymously().catch(e=>{$('jerr').textContent='서버에 연결하지 못했어요. 선생님께 알려 주세요.';});
@@ -143,7 +143,7 @@ $('bHome').onclick=()=>{if(roomRef)roomRef.off();roomRef=null;code=null;me=-1;na
 
 function onRoom(s){const v=s.val();
  if(!v){show('sMsg');$('mtxt').textContent='선생님이 방을 닫았어요. 다음 경기에서 만나요!';return;}
- room=v;if(v.names)names=toArr(v.names);
+ room=v;if(v.names)names=toArr(v.names);if(v.nums)nums=toArr(v.nums);
  const cl=v.claims||{};
  if(me<0){for(const k in cl)if(cl[k]===uid)me=+k;}
  else if(cl[me]!==uid&&v.status!=='done')me=-1;
@@ -154,17 +154,18 @@ function onRoom(s){const v=s.val();
  else if(v.status==='racing'){if(cur!=='sRace'){show('sRace');initRace();}updRace(v.state||{});}}
 
 /* ---------- 이름 고르기 ---------- */
-function renderPick(cl){$('nm').innerHTML=names.map((n,i)=>{const tk=cl[i]&&cl[i]!==uid;return '<button data-i="'+i+'" class="'+(tk?'tk':'')+'">'+(i+1)+'. '+esc(n)+(tk?'<br><small>선택됨</small>':'')+'</button>';}).join('');
+function lbl(i){const n=names[i]||'';return /^\d+번$/.test(n)?n:(nums[i]||i+1)+'번 '+n;}
+function renderPick(cl){$('nm').innerHTML=names.map((n,i)=>{const tk=cl[i]&&cl[i]!==uid;return '<button data-i="'+i+'" class="'+(tk?'tk':'')+'">'+esc(lbl(i))+(tk?'<br><small>선택됨</small>':'')+'</button>';}).join('');
  $('nm').querySelectorAll('button').forEach(b=>b.onclick=()=>pick(+b.dataset.i,b.classList.contains('tk')));}
 async function pick(i,tk){if(tk){$('perr').textContent='이미 다른 친구가 골랐어요';return;}
- if(!confirm((i+1)+'번 '+names[i]+' 맞나요?'))return;
+ if(!confirm(lbl(i)+' 맞나요?'))return;
  try{const r=await db.ref('rooms/'+code+'/claims/'+i).transaction(c=>c===null?uid:undefined);
   if(r.snapshot.val()===uid){me=i;room.claims=room.claims||{};room.claims[i]=uid;$('perr').textContent='';onRoom({val:()=>room});}else $('perr').textContent='이미 다른 친구가 골랐어요';}
  catch(e){$('perr').textContent='고르지 못했어요. 다시 눌러 주세요';}}
 
 /* ---------- 꾸미기 ---------- */
 const pv=$('pv').getContext('2d'),mn=$('mini').getContext('2d');
-function buildDeco(){$('dname').textContent=(me+1)+'번 '+(names[me]||'')+'의 오리';
+function buildDeco(){$('dname').textContent=lbl(me)+'의 오리';
  $('sw').innerHTML='';PAL.forEach((p,i)=>{const b=document.createElement('button');b.style.background=p[1];b.setAttribute('aria-label','몸 색 '+(i+1));b.onclick=()=>{myLook.pal=i;saveLook();};$('sw').appendChild(b);});
  $('ac').innerHTML='';ACN.forEach((n,i)=>{const b=document.createElement('button');b.textContent=n;b.onclick=()=>{myLook.acc=i;saveLook();};$('ac').appendChild(b);});}
 function syncDeco(){$('sw').querySelectorAll('button').forEach((b,j)=>b.className=j===myLook.pal?'on':'');$('ac').querySelectorAll('button').forEach((b,j)=>b.className=j===myLook.acc?'on':'');
@@ -182,7 +183,7 @@ const ZNN=['단풍 마을','황금 논밭','대나무 숲','강변 축제'];
 let S={},lastS=-1,lastK=0,gauge=0,bcd=0,target='me',evT=0;
 function initRace(){lastS=-1;gauge=0;bcd=0;S={};
  lastK=room&&room.state&&room.state.k?room.state.k[2]:0;
- $('fr').innerHTML=names.map((n,i)=>i===me?'':'<option value="'+i+'">'+(i+1)+'번 '+esc(n)+'</option>').join('');
+ $('fr').innerHTML=names.map((n,i)=>i===me?'':'<option value="'+i+'">'+esc(lbl(i))+'</option>').join('');
  $('ev').textContent='곧 출발해요! 응원 게이지가 차면 응원을 보낼 수 있어요.';}
 function evMsg(m){$('ev').textContent=m;evT=performance.now();}
 function updRace(s){S=s;const p=toArr(s.p),r=toArr(s.r),sc=toArr(s.s);if(!p.length)return;
