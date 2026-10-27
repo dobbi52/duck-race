@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>오리 레이스</title>
+<link href="https://cdn.jsdelivr.net/npm/galmuri/dist/galmuri.css" rel="stylesheet">
+<style>
+:root{--br:#3b2412;--bn:#6b4423;--cr:#fff6d8;--gr:#5aa832;--gd:#2e6b16}
+*{box-sizing:border-box}
+html,body{margin:0;background:#2b1d10;font-family:'Galmuri11','Galmuri9',sans-serif;color:var(--br)}
+button,input,select{font-family:inherit}
+.scr{max-width:480px;margin:0 auto;min-height:100vh;background:var(--cr);border-left:3px solid var(--gd);border-right:3px solid var(--gd);display:flex;flex-direction:column}
+.hd{background:var(--gr);border-bottom:3px solid var(--gd);padding:9px 12px;display:flex;justify-content:space-between;font-size:15px;color:#ffe14d}
+.bd{padding:14px;display:flex;flex-direction:column;gap:11px}
+.hidden{display:none!important}
+.lb{font-size:14px;color:var(--bn)}
+.h1{font-size:20px;text-align:center;margin:6px 0}
+.box{border:3px solid var(--bn);background:#fff;padding:8px}
+canvas{display:block;width:100%;image-rendering:pixelated}
+.sw{display:grid;grid-template-columns:repeat(9,1fr);gap:5px}
+.sw button{aspect-ratio:1;border:2px solid var(--br);border-radius:0;padding:0;cursor:pointer}
+.sw button.on{outline:3px solid #e0a800;outline-offset:1px}
+.ac{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}
+.ac button,.tg2 button,select,.nm button{font-size:14px;background:#fff;color:var(--br);border:2px solid var(--bn);border-radius:0;padding:7px 2px;cursor:pointer}
+.ac button.on,.tg2 button.on{background:var(--bn);color:var(--cr)}
+.nm{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.nm button.tk{background:#e2d7bf;color:#9a8b6e;border-color:#b9ab8c}
+.big{font-size:17px;padding:11px 0;border:3px solid var(--gd);border-radius:0;background:var(--gr);color:#fff;cursor:pointer;width:100%}
+.big.red{background:#e5484d;border-color:#7a1f1f}
+.big.off{background:#b9ab8c;border-color:var(--bn)}
+.small{font-size:13px;background:none;border:none;color:var(--bn);text-decoration:underline;cursor:pointer;padding:4px}
+input.code{font-size:30px;letter-spacing:.3em;text-align:center;padding:10px;border:3px solid var(--bn);width:100%;border-radius:0;background:#fff;color:var(--br)}
+.err{color:#c0392b;font-size:14px;min-height:20px;text-align:center}
+.gauge{height:14px;border:2px solid var(--br);background:#fff}
+.gauge i{display:block;height:100%;width:0;background:#f76b15}
+.stat{display:flex;gap:6px}
+.stat div{flex:1;background:#fff;border:2px solid var(--bn);text-align:center;padding:5px 0;font-size:12px;color:var(--bn)}
+.stat b{display:block;font-size:20px;font-weight:400;color:var(--br)}
+.log{font-size:14px;background:var(--br);color:var(--cr);padding:7px 9px;min-height:36px;line-height:1.4}
+.tg2{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.res{font-size:44px;text-align:center;color:#c0392b;margin:6px 0}
+</style>
+</head>
+<body>
+<div class="scr">
+  <div class="hd"><span>오리 레이스</span><span id="hdr"></span></div>
+
+  <div class="bd" id="sJoin">
+    <div class="h1">방 번호를 입력해요</div>
+    <input class="code" id="code" inputmode="numeric" maxlength="4" placeholder="0000" autocomplete="off">
+    <button class="big" id="bJoin">들어가기</button>
+    <div class="err" id="jerr"></div>
+  </div>
+
+  <div class="bd hidden" id="sPick">
+    <div class="h1">내 이름을 골라요</div>
+    <div class="nm" id="nm"></div>
+    <div class="err" id="perr"></div>
+  </div>
+
+  <div class="bd hidden" id="sDeco">
+    <div class="lb" id="dname"></div>
+    <div class="box" style="background:#3c9fdc"><canvas id="pv" width="40" height="22"></canvas></div>
+    <div class="lb">몸 색</div><div class="sw" id="sw"></div>
+    <div class="lb">소품</div><div class="ac" id="ac"></div>
+    <button class="big" id="bReady">준비 완료</button>
+    <div class="log" id="rlog">마음에 드는 모양을 고르고 준비 완료를 눌러요.</div>
+    <button class="small" id="bRe">이름을 잘못 골랐어요</button>
+  </div>
+
+  <div class="bd hidden" id="sRace">
+    <div style="display:flex;gap:8px;align-items:center">
+      <div style="width:64px;background:#3c9fdc;border:3px solid var(--bn)"><canvas id="mini" width="20" height="16"></canvas></div>
+      <div class="stat" style="flex:1"><div>내 순위<b id="rank">-</b></div><div>거리<b id="dist">0m</b></div></div>
+    </div>
+    <div class="log" id="ev">곧 출발해요!</div>
+    <div class="lb">강 지도 · 강을 눌러 빵 조각 던지기 (<span id="bc">준비됨</span>)</div>
+    <div class="box" style="padding:0;cursor:crosshair"><canvas id="map" width="160" height="36"></canvas></div>
+    <div class="lb">응원 보낼 오리</div>
+    <div class="tg2"><button class="on" id="tme">내 오리</button><button id="tfr">친구 오리</button></div>
+    <select id="fr" class="hidden"></select>
+    <div class="gauge"><i id="gf"></i></div>
+    <button class="big off" id="ch">응원 충전 중</button>
+  </div>
+
+  <div class="bd hidden" id="sDone">
+    <div class="h1" id="dt1"></div>
+    <div class="res" id="dres"></div>
+    <div class="log" id="dt2" style="text-align:center"></div>
+    <div class="lb" style="text-align:center">선생님이 다시 경기를 시작하면 자동으로 넘어가요.</div>
+  </div>
+
+  <div class="bd hidden" id="sMsg">
+    <div class="h1" id="mtxt"></div>
+    <button class="big" id="bHome">처음으로</button>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script>
+const firebaseConfig={apiKey:"AIzaSyAySwK7RVdvfStTkGiN7Vb6yxLFUbxLsQo",authDomain:"duck-race-23875.firebaseapp.com",databaseURL:"https://duck-race-23875-default-rtdb.asia-southeast1.firebasedatabase.app",projectId:"duck-race-23875",storageBucket:"duck-race-23875.firebasestorage.app",messagingSenderId:"447636809425",appId:"1:447636809425:web:540bc58ef9c3a0fcdc47f0"};
+firebase.initializeApp(firebaseConfig);
+const db=firebase.database(),auth=firebase.auth();
+const $=id=>document.getElementById(id);
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function toArr(x){if(!x)return [];if(Array.isArray(x))return x;const a=[];Object.keys(x).forEach(k=>a[+k]=x[k]);return a;}
+let cur='sJoin';
+function show(id){if(cur===id)return;['sJoin','sPick','sDeco','sRace','sDone','sMsg'].forEach(s=>$(s).classList.toggle('hidden',s!==id));cur=id;}
+
+/* ---------- 오리 그림 ---------- */
+function R(c,x,y,w,h,col){c.fillStyle=col;c.fillRect(Math.round(x),Math.round(y),w,h);}
+const SP=["......kkkk...",".....kHHHHk..",".....kHHeHkkk",".....kHHHHbbk","kk...kHHHkkk.","kBk.kkBBBBk..","kBBkBBBBDDBk.","kBBBBBBDDDBk.",".kBBBBBBBBk..","..kkkkkkkk..."];
+const PAL=[['#ffd93d','#ffd93d','#e6a817','#f76b15'],['#ffffff','#f2f2f2','#cfcfcf','#f5a524'],['#1f8a4c','#a8a29a','#7a6e64','#f2c94c'],['#9a6b3f','#b98352','#7d5530','#e08a2e'],['#ff9ec7','#ffb8d6','#e57aa8','#f76b15'],['#5aa9ff','#8cc4ff','#3b7fd4','#ffb02e'],['#3a3a46','#4a4a58','#2b2b33','#f2c94c'],['#8a8f99','#c4c8cf','#7d828c','#f5a524'],['#9fd86a','#c7ec9b','#6fae3a','#f76b15']];
+const ACC=['none','straw','crown','ribbon','glasses','leaf','band','chef','bow'];
+const ACN=['없음','밀짚모자','왕관','리본','선글라스','나뭇잎','머리띠','요리사 모자','나비넥타이'];
+function duck(c,x,y,pal,acc){const p=PAL[pal]||PAL[0];
+ SP.forEach((row,ry)=>{for(let rx=0;rx<13;rx++){const ch=row[rx];if(ch==='.')continue;R(c,x+rx,y+ry,1,1,ch==='k'?'#3b2412':ch==='H'?p[0]:ch==='B'?p[1]:ch==='D'?p[2]:ch==='b'?p[3]:'#111');}});
+ const A=(dx,dy,w,h,col)=>R(c,x+dx,y+dy,w,h,col);if(pal===2)A(4,4,1,1,'#fff');
+ switch(ACC[acc]){case 'straw':A(3,0,9,1,'#3b2412');A(4,-1,7,1,'#e8bf5a');A(5,-3,5,2,'#e8bf5a');A(5,-2,5,1,'#c0392b');A(5,-4,5,1,'#3b2412');break;
+ case 'crown':A(6,-2,5,2,'#ffd400');A(6,-3,1,1,'#ffd400');A(8,-3,1,1,'#ffd400');A(10,-3,1,1,'#ffd400');A(8,-2,1,1,'#e5484d');break;
+ case 'ribbon':A(5,-1,2,2,'#e5484d');A(4,0,1,1,'#e5484d');A(7,0,1,1,'#e5484d');break;
+ case 'glasses':A(7,2,4,1,'#111');A(7,3,1,1,'#111');A(9,3,2,1,'#111');break;
+ case 'leaf':A(8,-2,2,2,'#4caf50');A(8,-1,1,1,'#2e7d32');A(7,-3,1,1,'#2e7d32');break;
+ case 'band':A(5,1,6,1,'#3e63dd');A(4,1,1,2,'#3e63dd');break;
+ case 'chef':A(6,-4,5,4,'#3b2412');A(7,-4,3,3,'#fff');A(6,-1,5,1,'#e6e6e6');break;
+ case 'bow':A(2,5,3,2,'#8e4ec6');A(1,5,1,1,'#8e4ec6');break;}}
+
+/* ---------- 접속 ---------- */
+let uid=null,code=null,roomRef=null,room=null,names=[],me=-1,myLook={pal:0,acc:1,ready:false};
+const q=new URLSearchParams(location.search).get('room');if(q)$('code').value=q.replace(/\D/g,'').slice(0,4);
+auth.onAuthStateChanged(u=>{if(u){uid=u.uid;if($('jerr').textContent.indexOf('연결')>=0)$('jerr').textContent='';if(q&&!code)join();}});
+auth.signInAnonymously().catch(e=>{$('jerr').textContent='서버에 연결하지 못했어요. 선생님께 알려 주세요.';});
+$('bJoin').onclick=join;$('code').addEventListener('keydown',e=>{if(e.key==='Enter')join();});
+async function join(){const c=$('code').value.replace(/\D/g,'');if(c.length!==4){$('jerr').textContent='네 자리 숫자를 입력해 주세요';return;}
+ if(!uid){$('jerr').textContent='연결하는 중이에요. 잠시 뒤 다시 눌러 주세요';return;}
+ try{const s=await db.ref('rooms/'+c+'/host').once('value');if(!s.exists()){$('jerr').textContent='그런 방이 없어요. 번호를 다시 확인해 주세요';return;}}
+ catch(e){$('jerr').textContent='방에 들어가지 못했어요';return;}
+ if(roomRef)roomRef.off();code=c;$('hdr').textContent='방 '+c;roomRef=db.ref('rooms/'+c);roomRef.on('value',onRoom);}
+$('bHome').onclick=()=>{if(roomRef)roomRef.off();roomRef=null;code=null;me=-1;names=[];$('hdr').textContent='';$('jerr').textContent='';show('sJoin');};
+
+function onRoom(s){const v=s.val();
+ if(!v){show('sMsg');$('mtxt').textContent='선생님이 방을 닫았어요. 다음 경기에서 만나요!';return;}
+ room=v;if(v.names)names=toArr(v.names);
+ const cl=v.claims||{};
+ if(me<0){for(const k in cl)if(cl[k]===uid)me=+k;}
+ else if(cl[me]!==uid&&v.status!=='done')me=-1;
+ if(v.status==='done'){if(me>=0)showDone(v);else{show('sMsg');$('mtxt').textContent='경기가 끝났어요. 다음 경기에서 만나요!';}return;}
+ if(me<0){renderPick(cl);show('sPick');return;}
+ const lk=toArr(v.looks)[me];if(lk)myLook={pal:lk.pal|0,acc:lk.acc|0,ready:!!lk.ready};
+ if(v.status==='lobby'){if(cur!=='sDeco'){show('sDeco');buildDeco();}syncDeco();}
+ else if(v.status==='racing'){if(cur!=='sRace'){show('sRace');initRace();}updRace(v.state||{});}}
+
+/* ---------- 이름 고르기 ---------- */
+function renderPick(cl){$('nm').innerHTML=names.map((n,i)=>{const tk=cl[i]&&cl[i]!==uid;return '<button data-i="'+i+'" class="'+(tk?'tk':'')+'">'+(i+1)+'. '+esc(n)+(tk?'<br><small>선택됨</small>':'')+'</button>';}).join('');
+ $('nm').querySelectorAll('button').forEach(b=>b.onclick=()=>pick(+b.dataset.i,b.classList.contains('tk')));}
+async function pick(i,tk){if(tk){$('perr').textContent='이미 다른 친구가 골랐어요';return;}
+ if(!confirm((i+1)+'번 '+names[i]+' 맞나요?'))return;
+ try{const r=await db.ref('rooms/'+code+'/claims/'+i).transaction(c=>c===null?uid:undefined);
+  if(r.snapshot.val()===uid){me=i;room.claims=room.claims||{};room.claims[i]=uid;$('perr').textContent='';onRoom({val:()=>room});}else $('perr').textContent='이미 다른 친구가 골랐어요';}
+ catch(e){$('perr').textContent='고르지 못했어요. 다시 눌러 주세요';}}
+
+/* ---------- 꾸미기 ---------- */
+const pv=$('pv').getContext('2d'),mn=$('mini').getContext('2d');
+function buildDeco(){$('dname').textContent=(me+1)+'번 '+(names[me]||'')+'의 오리';
+ $('sw').innerHTML='';PAL.forEach((p,i)=>{const b=document.createElement('button');b.style.background=p[1];b.setAttribute('aria-label','몸 색 '+(i+1));b.onclick=()=>{myLook.pal=i;saveLook();};$('sw').appendChild(b);});
+ $('ac').innerHTML='';ACN.forEach((n,i)=>{const b=document.createElement('button');b.textContent=n;b.onclick=()=>{myLook.acc=i;saveLook();};$('ac').appendChild(b);});}
+function syncDeco(){$('sw').querySelectorAll('button').forEach((b,j)=>b.className=j===myLook.pal?'on':'');$('ac').querySelectorAll('button').forEach((b,j)=>b.className=j===myLook.acc?'on':'');
+ $('bReady').textContent=myLook.ready?'다시 꾸미기':'준비 완료';$('bReady').className=myLook.ready?'big off':'big';
+ $('rlog').textContent=myLook.ready?'준비 완료! 선생님이 출발을 누를 때까지 기다려요.':'마음에 드는 모양을 고르고 준비 완료를 눌러요.';}
+function saveLook(){syncDeco();if(me<0)return;db.ref('rooms/'+code+'/looks/'+me).set({pal:myLook.pal,acc:myLook.acc,ready:myLook.ready}).catch(()=>{});}
+$('bReady').onclick=()=>{myLook.ready=!myLook.ready;saveLook();};
+$('bRe').onclick=async()=>{if(!confirm('이름을 다시 고를까요?'))return;const i=me;myLook.ready=false;
+ try{await db.ref('rooms/'+code+'/looks/'+i).set({pal:myLook.pal,acc:myLook.acc,ready:false});await db.ref('rooms/'+code+'/claims/'+i).remove();}catch(e){}
+ if(room&&room.claims)delete room.claims[i];me=-1;onRoom({val:()=>room});};
+
+/* ---------- 경기 ---------- */
+const EVT=['다시 힘차게 헤엄치는 중','소용돌이에 빠졌어요! 빙글빙글','급류를 탔어요! 슝-','빵 조각을 먹었어요! 부스터 ON','갑자기 낮잠을 자요... zzz','방향을 착각해 거꾸로 가요!','거북이 택시를 탔어요!','잉어가 튀어올라 깜짝 놀랐어요!','휙! 앞 친구와 자리를 바꿨어요!'];
+const ZNN=['단풍 마을','황금 논밭','대나무 숲','강변 축제'];
+let S={},lastS=-1,lastK=0,gauge=0,bcd=0,target='me',evT=0;
+function initRace(){lastS=-1;gauge=0;bcd=0;S={};
+ lastK=room&&room.state&&room.state.k?room.state.k[2]:0;
+ $('fr').innerHTML=names.map((n,i)=>i===me?'':'<option value="'+i+'">'+(i+1)+'번 '+esc(n)+'</option>').join('');
+ $('ev').textContent='곧 출발해요! 응원 게이지가 차면 응원을 보낼 수 있어요.';}
+function evMsg(m){$('ev').textContent=m;evT=performance.now();}
+function updRace(s){S=s;const p=toArr(s.p),r=toArr(s.r),sc=toArr(s.s);if(!p.length)return;
+ const ord=p.map((x,i)=>i).sort((a,b)=>{const ra=r[a]||0,rb=r[b]||0;if(ra&&rb)return ra-rb;if(ra)return -1;if(rb)return 1;return p[b]-p[a];});
+ $('rank').textContent=(ord.indexOf(me)+1)+'등';$('dist').textContent=Math.round((p[me]||0)*200)+'m';$('hdr').textContent=ZNN[s.z|0]||'';
+ const my=sc[me]|0;
+ if(r[me]){if(lastS!==99){lastS=99;evMsg('골인! '+r[me]+'번째로 들어왔어요');}}
+ else if(my!==lastS){if(my||lastS>0)evMsg(EVT[my]);lastS=my;}
+ toArr(s.h).forEach(h=>{if(h&&h[0]===me&&h[1]!==me)evMsg((names[h[1]]||'친구')+'이(가) 내 오리를 응원했어요!');});
+ if(s.k&&s.k[2]!==lastK){lastK=s.k[2];const e=s.k[0],th=s.k[1];if(th===me&&e!==me)evMsg('내 빵 조각을 '+(names[e]||'친구')+' 오리가 먹었어요!');}}
+$('tme').onclick=()=>{target='me';$('tme').className='on';$('tfr').className='';$('fr').classList.add('hidden');};
+$('tfr').onclick=()=>{target='fr';$('tfr').className='on';$('tme').className='';$('fr').classList.remove('hidden');};
+$('ch').onclick=()=>{if(gauge<1||me<0)return;const to=target==='me'?me:+$('fr').value;if(isNaN(to))return;gauge=0;
+ db.ref('rooms/'+code+'/cheers').push({to,from:me,uid}).catch(()=>{});
+ evMsg(to===me?'내 오리에게 응원을 보냈어요! 하트가 떠올라요':(names[to]+' 오리에게 응원을 보냈어요!'));};
+const map=$('map'),mc=map.getContext('2d');
+map.onclick=e=>{if(me<0)return;if(bcd>0){evMsg('빵 조각은 '+Math.ceil(bcd)+'초 뒤에 다시 던질 수 있어요');return;}
+ const rc=map.getBoundingClientRect(),px=(e.clientX-rc.left)/rc.width*160,py=(e.clientY-rc.top)/rc.height*36;
+ if(py<6||py>30){evMsg('강 위를 눌러 주세요');return;}
+ const p=Math.max(0,Math.min(1,(px-4)/150)),y=Math.max(0,Math.min(1,(py-7)/20));bcd=8;
+ db.ref('rooms/'+code+'/breads').push({p,y,from:me,uid}).catch(()=>{});
+ evMsg(Math.round(p*200)+'m 지점에 빵 조각을 던졌어요! 누가 먹을까요?');};
+function drawMap(){const p=toArr(S.p),n=Math.max(2,p.length||names.length);
+ R(mc,0,0,160,36,'#7cc04a');R(mc,0,6,160,24,'#3c9fdc');R(mc,0,6,160,1,'#62bdeb');R(mc,0,29,160,1,'#62bdeb');
+ [[0,'#e4c27c',43],[43,'#e8c547',83],[83,'#8fd06a',121],[121,'#f2a0a0',156]].forEach(z=>R(mc,z[0]+4,1,z[2]-z[0],4,z[1]));
+ for(let r=0;r<12;r++)R(mc,154,6+r*2,2,1,r%2?'#fff':'#3b2412');
+ toArr(S.b).forEach(b=>{if(!b)return;const x=4+b[0]*150,y=7+b[1]*20;R(mc,x-1,y-1,4,3,b[2]===me?'#e5484d':'#3b2412');R(mc,x,y,2,1,'#f0c27a');});
+ p.forEach((v,i)=>{if(i===me)return;R(mc,4+v*150,7+i/(n-1)*20,2,2,'#fff6d8');});
+ if(me>=0){const x=4+(p[me]||0)*150,y=7+me/(n-1)*20;R(mc,x-2,y-2,6,6,'#3b2412');R(mc,x-1,y-1,4,4,(PAL[myLook.pal]||PAL[0])[1]);R(mc,x-1,y-5,4,2,'#e5484d');}}
+
+/* ---------- 결과 ---------- */
+function showDone(v){show('sDone');const o=toArr(v.result),rk=o.indexOf(me)+1,m=v.mode||'all';
+ if(m==='first'){$('dt1').textContent='오늘의 1등';$('dres').textContent=names[o[0]]||'';}
+ else if(m==='last'){$('dt1').textContent='오늘의 꼴등';$('dres').textContent=names[o[o.length-1]]||'';}
+ else{$('dt1').textContent='나의 순위';$('dres').textContent=rk?rk+'등':'-';}
+ $('dt2').textContent=rk?(names[me]||'내')+' 오리는 '+o.length+'마리 중 '+rk+'등으로 들어왔어요!':'';}
+
+/* ---------- 반복 ---------- */
+let last=performance.now(),ut=0;
+function loop(n){const dt=Math.min(0.05,(n-last)/1000);last=n;const tt=n/1000;
+ if(cur==='sDeco'){pv.clearRect(0,0,40,22);R(pv,0,0,40,22,'#3c9fdc');for(let k=0;k<8;k++)R(pv,(k*11+tt*6)%40,3+k*2.3,3,1,'#7fcdf2');const b=Math.sin(tt*4)>0?0:1;duck(pv,13,7+b,myLook.pal,myLook.acc);R(pv,12,17+b,15,1,'#a8e0f7');}
+ if(cur==='sRace'){gauge=Math.min(1,gauge+dt/4);bcd=Math.max(0,bcd-dt);
+  const b=Math.sin(tt*4)>0?0:1;mn.clearRect(0,0,20,16);R(mn,0,0,20,16,'#3c9fdc');duck(mn,3,4+b,myLook.pal,myLook.acc);R(mn,2,14,15,1,'#a8e0f7');drawMap();
+  ut+=dt;if(ut>0.15){ut=0;$('gf').style.width=(gauge*100)+'%';const rd=gauge>=1;$('ch').className=rd?'big red':'big off';$('ch').textContent=rd?'응원하기!':'응원 충전 중';$('bc').textContent=bcd>0?Math.ceil(bcd)+'초 뒤':'준비됨';}}
+ requestAnimationFrame(loop);}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
