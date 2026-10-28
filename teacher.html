@@ -1038,10 +1038,10 @@ function kStep(dt){kt+=dt;const G=kg(),sp=100;
  kd.forEach(d=>{if(d.out||(d===kT&&kS!=='idle'&&kS!=='result'))return;d.x+=d.vx*dt;if(d.x<G.X0||d.x>G.X1-13){d.vx*=-1;d.x=Math.max(G.X0,Math.min(G.X1-13,d.x));}if(Math.random()<dt*0.3)d.vx=(Math.random()-0.5)*6;});
  const mv=()=>{kTick+=dt;if(kTick>0.09){kTick=0;kt0(170,0.04,'square',0.05);}};
  if(kS==='move'){if(kwait>0)kwait-=dt;else{const goal=kwp[0]===-1?kT.x+6:kwp[0],dx=goal-kx;if(Math.abs(dx)<1){kx=goal;kwp.shift();kwait=kwp.length?0.3:0.4;kt0(520,0.05,'square',0.07);if(!kwp.length){kS='down';kt0(760,1.1,'triangle',0.08,0.4,240);}}else{kx+=Math.sign(dx)*Math.min(Math.abs(dx),sp*dt);mv();}}}
- else if(kS==='down'){if(kwait>0){kwait-=dt;return;}kL+=40*dt;kRoll+=dt;if(kRoll>0.06){kRoll=0;kNoise(0.04,0.08,900,null,'bandpass');}if(kTip()>=kT.y+6){kS='grab';kwait=0.45;}}
+ else if(kS==='down'){if(kwait>0){kwait-=dt;return;}kL+=40*dt;kRoll+=dt;if(kRoll>0.06){kRoll=0;kNoise(0.04,0.08,900,null,'bandpass');}if(kTip()>=kT.y+1){kS='grab';kwait=0.45;}}
  else if(kS==='grab'){kOpen=Math.max(0,kOpen-dt*3);kwait-=dt;if(kwait<=0){kt0(140,0.08,'square',0.15);kt0(220,0.08,'square',0.12,0.06);kCarry=true;kS='up';kSplash(kT.x+6,kT.y+9,8);}}
- else if(kS==='up'){kL-=30*dt;kT.x=kx-6;kT.y=kTip()-7;if(kMiss&&kL<(104-KRAIL)*0.55){kMiss=false;kCarry=false;kOpen=1;kFall={vy:0,ty:104+Math.random()*42};kS='fall';kt0(600,0.5,'square',0.1,0,150);}if(kL<=6){kL=6;kS='carry';}}
- else if(kS==='fall'){kFall.vy+=260*dt;kT.y+=kFall.vy*dt;if(kT.y>=kFall.ty){kT.y=kFall.ty;kSplash(kT.x+6,kT.y+8,18);kNoise(0.3,0.3,1200,300,'lowpass');kFall=null;kS='move';kwp=[-1];kwait=0.8;}}
+ else if(kS==='up'){kL-=30*dt;kT.x=kx-6;kT.y=kTip()-1;if(kMiss&&kL<(104-KRAIL)*0.55){kMiss=false;kCarry=false;kOpen=1;kFall={vy:0,ty:104+Math.random()*42};kS='fall';kt0(600,0.5,'square',0.1,0,150);}if(kL<=6){kL=6;kS='carry';}}
+ else if(kS==='fall'){kFall.vy+=260*dt;kT.y+=kFall.vy*dt;if(kT.y>=kFall.ty){kT.y=kFall.ty;kSplash(kT.x+6,kT.y+8,18);kNoise(0.3,0.3,1200,300,'lowpass');kFall=null;const pool2=kd.filter(d=>!d.out&&d!==kT);if(pool2.length){kT=pool2[Math.floor(Math.random()*pool2.length)];kT.vx=0;}kS='move';kwp=[-1];kwait=0.8;}}
  else if(kS==='carry'){const dx=G.HOME-kx;if(Math.abs(dx)<1){kx=G.HOME;kS='drop';kwait=0.3;}else{kx+=Math.sign(dx)*Math.min(Math.abs(dx),sp*dt);kT.x=kx-6;mv();}}
  else if(kS==='drop'){kwait-=dt;if(kwait<=0){kOpen=Math.min(1,kOpen+dt*4);if(kOpen>=1){kCarry=false;kT.vy=(kT.vy||0)+300*dt;kT.y+=kT.vy*dt*4;if(kT.y>170){kT.vy=0;kT.out=true;kWin();}}}}
  kp.forEach(p=>{p.l-=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=(p.k==='w'?160:30)*dt;});kp=kp.filter(p=>p.l>0);
@@ -1088,13 +1088,14 @@ function kDraw(){const c=kc,G=kg(),W=KW,gw=G.GX1-G.GX0,x0=G.GX0+2,iw=gw-4;
  live.forEach(d=>{const b=Math.sin(kt*4+d.ph)>0?0:1;if(d===kFlash&&kS==='fast'){R(c,d.x-3,d.y-3+b,19,15,'#3b2412');R(c,d.x-2,d.y-2+b,17,13,'#ffe14d');}
   c.globalAlpha=0.5;R(c,d.x+1,d.y+10+b,12,1,'#a8e2f8');c.globalAlpha=1;duck(c,d.x,d.y+b,d.lk,d.vx<0,kt,d.ph);
   if(!d.tag)pTag(c,d.x+3,d.y-10+b,d.num);});
- if(kT&&(kCarry||kFall||(kS==='drop'&&!kT.out))){duck(c,kT.x,kT.y,kT.lk,false,kt,null);if(kCarry){const f=Math.floor(kt*8)%2;R(c,kT.x-3,kT.y+2+f,2,1,'#fff');R(c,kT.x+15,kT.y+5-f,2,1,'#fff');}}
  R(c,x0,KRAIL-3,iw,5,'#3b2412');R(c,x0,KRAIL-2,iw,1,'#e8ecf0');R(c,x0,KRAIL-1,iw,2,'#a7a9b0');for(let x=x0+6;x<x0+iw;x+=18)R(c,x,KRAIL-1,1,1,'#5b6068');
  R(c,x0,KRAIL-6,3,10,'#3b2412');R(c,x0+iw-3,KRAIL-6,3,10,'#3b2412');
  R(c,kx-8,KRAIL-6,16,10,'#3b2412');R(c,kx-7,KRAIL-5,14,8,'#ffd93d');R(c,kx-7,KRAIL-5,14,1,'#fff3a8');R(c,kx-7,KRAIL+1,14,2,'#e0a800');R(c,kx-6,KRAIL-7,3,1,'#3b2412');R(c,kx+3,KRAIL-7,3,1,'#3b2412');
  {const busy=kS!=='idle'&&kS!=='result';R(c,kx-1,KRAIL-4,3,2,busy&&Math.floor(kt*6)%2?'#e5484d':'#7a1f1f');}
  const hy=KRAIL+3+kL;for(let y=KRAIL+4;y<hy;y++)R(c,kx,y,1,1,(y>>1)%2?'#3b2412':'#8a8f99');
  clawHead(c,kx,hy,kOpen);
+ if(kT&&(kCarry||kFall||(kS==='drop'&&!kT.out))){duck(c,kT.x,kT.y,kT.lk,false,kt,null);if(kCarry){const f=Math.floor(kt*8)%2;R(c,kT.x-3,kT.y+2+f,2,1,'#fff');R(c,kT.x+15,kT.y+5-f,2,1,'#fff');}
+  if(!kT.tag&&kCarry){const w=pW(kT.num)+4,tx=Math.round(kT.x+6.5-w/2),ty=kT.y+12;R(c,tx-1,ty-1,w+2,11,'#3b2412');R(c,tx,ty,w,9,'#ffd93d');pText(c,tx+2,ty+2,kT.num,'#3b2412');}}
  kp.forEach(p=>R(c,p.x,p.y,p.k==='c'?2:1,p.k==='c'?2:1,p.k==='c'?p.c:'#fff'));
  c.globalAlpha=0.16;for(let k=0;k<Math.floor(W/140)+1;k++){for(let i=0;i<62;i++){const x=80+k*140+i*0.45;if(x+11>G.GX1-3)continue;R(c,x,32+i,6,1,'#fff');R(c,x+9,32+i,2,1,'#fff');}}c.globalAlpha=0.25;R(c,x0,30,iw,1,'#ffffff');R(c,x0,30,1,60,'#ffffff');c.globalAlpha=1;
  R(c,0,160,W,20,'#a8301c');R(c,0,160,W,2,'#3b2412');R(c,3,162,W-6,4,'#c4c8cf');R(c,3,162,W-6,1,'#eef0f2');R(c,3,165,W-6,1,'#8a8f99');R(c,3,166,W-6,1,'#c94a30');
@@ -1104,7 +1105,7 @@ function kDraw(){const c=kc,G=kg(),W=KW,gw=G.GX1-G.GX0,x0=G.GX0+2,iw=gw-4;
   for(let k=0;k<7;k++)R(c,jx+Math.round(tl*k/7),174-k,1,1,'#3b2412');disc(c,jx+tl,166,3,'#3b2412');disc(c,jx+tl,166,2,'#e5484d');R(c,jx+tl-1,165,1,1,'#ffb0b3');}
  [[W-62,'#30a46c','#7fe0a8',kS==='down'||kS==='grab'],[W-44,'#3e63dd','#9fb4ff',kS==='fast']].forEach(q=>{const py=q[3]?1:0;disc(c,q[0],172,5,'#3b2412');disc(c,q[0],171+py,4,q[1]);R(c,q[0]-2,169+py,2,1,q[2]);});
  kd.forEach(d=>{const t=d.tag;if(!t)return;const hide=d.out||(d===kT&&kS==='drop'&&!kCarry);t.style.display=hide?'none':'block';if(hide)return;const b=(d===kT&&(kCarry||kFall))?0:(Math.sin(kt*4+d.ph)>0?0:1);
-  t.style.left=((d.x+6.5)/W*100)+'%';t.style.top=((d.y-2+b)/KH*100)+'%';t.classList.toggle('hot',(d===kT&&kCarry)||(kS==='fast'&&d===kFlash));});
+  const car=d===kT&&kCarry;t.style.left=((d.x+6.5)/W*100)+'%';t.style.top=((car?d.y+21:d.y-2+b)/KH*100)+'%';t.classList.toggle('hot',(d===kT&&kCarry)||(kS==='fast'&&d===kFlash));});
  if(kS==='result'&&kT){kbc.clearRect(0,0,30,20);const b=Math.sin(kt*5)>0?0:1;duck(kbc,8,6+b,kT.lk,false,kt,null);const f=Math.floor(kt*6)%2;[[3,4],[25,6],[5,16],[24,15]].forEach((q,j)=>R(kbc,q[0],q[1],1,1,(j+f)%2?'#ffe14d':'#fff'));}}
 function kFit(){if(!kOn)return;const sw=kst.clientWidth||640,other=$('claw').offsetHeight-kst.offsetHeight,avail=Math.max(220,window.innerHeight-other-20);
  const w=Math.max(320,Math.min(640,Math.round(KH*sw/avail)));if(w!==KW){const G0=kg();KW=w;kcv.width=KW;const G=kg();kd.forEach(d=>{d.x=Math.max(G.X0,Math.min(G.X1-13,d.x));});if(kS==='idle'||kS==='result')kx=G.HOME;}
