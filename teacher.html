@@ -31,7 +31,7 @@ textarea{width:100%;height:170px;font-size:15px;padding:8px;border:3px solid var
 #stage{position:relative;border:3px solid var(--gd);border-top:0;overflow:hidden;background:#3c9fdc}
 #stage canvas{display:block;width:100%;image-rendering:pixelated}
 #mmw{border:3px solid var(--gd);border-top:0;background:var(--gr)}
-#mmw canvas{display:block;width:100%;height:clamp(18px,3.2vh,34px);image-rendering:pixelated}
+#mmw canvas{display:block;width:100%;cursor:zoom-in;touch-action:none;height:clamp(18px,3.2vh,34px);image-rendering:pixelated}
 .tg{position:absolute;transform:translate(-100%,-50%);font-size:calc(var(--u)*4.2);line-height:1;background:var(--br);color:var(--cr);padding:1px 2px;pointer-events:none}
 .bb{position:absolute;transform:translate(-25%,-120%);font-size:calc(var(--u)*4.4);line-height:1.1;background:var(--cr);border:2px solid var(--bn);padding:1px 4px;white-space:nowrap;display:none;z-index:3;pointer-events:none}
 .msg{position:absolute;left:2%;right:2%;bottom:3%;background:var(--cr);border:3px solid var(--bn);padding:.4em .8em;font-size:calc(var(--u)*7);display:none;z-index:5}
@@ -645,6 +645,13 @@ function showGame(){setBgm('lobby');$('setup').classList.add('hidden');$('game')
  document.querySelectorAll('#stage .tg,#stage .bb').forEach(e=>e.remove());tags=[];bbs=[];
  names.forEach((n,i)=>{const a=document.createElement('div');a.className='tg';a.textContent=nums[i]||i+1;st.appendChild(a);tags.push(a);const b=document.createElement('div');b.className='bb';st.appendChild(b);bbs.push(b);});
  $('lobby').classList.remove('hidden');updPanel();fit();}
+let peekX=null,peekT=null;
+function mmWorld(e){const r=mm.getBoundingClientRect(),x=(e.clientX-r.left)/r.width*320;return Math.max(0,Math.min(WW,(x-4)/312*WW));}
+mm.addEventListener('pointermove',e=>{if(e.pointerType==='mouse'||e.buttons){clearTimeout(peekT);peekX=mmWorld(e);}});
+mm.addEventListener('pointerdown',e=>{clearTimeout(peekT);peekX=mmWorld(e);try{mm.setPointerCapture(e.pointerId);}catch(_){}});
+mm.addEventListener('pointerup',e=>{if(e.pointerType!=='mouse'){clearTimeout(peekT);peekT=setTimeout(()=>{peekX=null;},1200);}});
+mm.addEventListener('pointerleave',e=>{if(e.pointerType==='mouse'){peekX=null;}});
+mm.addEventListener('pointercancel',()=>{peekX=null;});
 function fit(){if($('game').classList.contains('hidden'))return;const sw=st.clientWidth||640,other=$('game').offsetHeight-st.offsetHeight,avail=Math.max(220,window.innerHeight-other-6);
  const w=Math.max(320,Math.min(720,Math.round(H*sw/avail)));if(w!==W){W=w;cv.width=W;}document.documentElement.style.setProperty('--u',(sw/W)+'px');}
 window.addEventListener('resize',fit);document.addEventListener('fullscreenchange',fit);
@@ -729,7 +736,7 @@ function loop(n){const dt=Math.min(0.05,(n-last)/1000);last=n;
  if(phase!=='setup'){
   if(phase==='count'){const rem=Math.ceil((cdEnd-n)/1000);if(rem>0){if(rem!==lastRem){lastRem=rem;sfx('beep');}msg.classList.add('cd');msg.textContent=rem;msg.style.display='block';clearTimeout(msg._t);}else{phase='race';sfx('go');setBgm('race');say('출발! '+N+'마리 오리가 단풍 마을을 지나갑니다',2200);}t+=dt;}
   else if(phase==='race')step(dt);else t+=dt;
-  const tgt=Math.min(WW-W,Math.max(0,camTarget()));cam+=(tgt-cam)*Math.min(1,dt*2.5);
+  const pk=peekX!==null;const tgt=Math.min(WW-W,Math.max(0,pk?peekX-W/2:camTarget()));cam+=(tgt-cam)*Math.min(1,dt*(pk?9:2.5));
   if(phase==='lobby'){d.forEach(o=>{if(o.bbU&&t>o.bbU){o.bbU=0;bbs[o.i].style.display='none';}});
    if(DEMO){simT-=dt;if(simT<0){simT=0.5+Math.random()*0.8;const un=d.filter(o=>!claims[o.i]),cl=d.filter(o=>claims[o.i]);
     if(un.length&&(Math.random()<0.65||!cl.length)){const o=un[Math.floor(Math.random()*un.length)];const nc=Object.assign({},claims);nc[o.i]='demo';setClaims(nc);}
