@@ -65,6 +65,8 @@ textarea{width:100%;height:170px;font-size:15px;padding:8px;border:3px solid var
 .ab{display:grid;grid-template-columns:repeat(auto-fill,minmax(50px,1fr));gap:6px;margin-bottom:6px}
 .ab button{font-size:15px;padding:7px 2px;border-radius:50% 50% 44% 44%/58% 58% 42% 42%!important;background:#f6c97a;color:var(--br);border:3px solid var(--bn);border-radius:0;cursor:pointer}
 .ab button.out{background:#e2d7bf;color:#a89a80;border-color:#b9ab8c;text-decoration:line-through}
+.ab.nm{grid-template-columns:repeat(auto-fill,minmax(86px,1fr))}
+.ab.nm button{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px;padding:8px 6px;border-radius:999px!important}
 .cnum{font-size:24px;min-width:72px;text-align:center}
 #setup{max-width:1200px;margin:18px auto;padding:0 16px 24px}
 .hero{position:relative;border:4px solid var(--gd);margin-bottom:14px;background:#3c9fdc}
@@ -286,7 +288,7 @@ function parseNames(){return $('names').value.split('\n').map(s=>s.trim()).filte
 function cnt(){$('ncount').textContent=parseNames().length+'명';renderAbs();}
 let pickMode=lsGet('duckrace_pick')||'num',count=Math.min(40,Math.max(2,+(lsGet('duckrace_count')||25))),absent=new Set();
 function fullList(){return pickMode==='num'?Array.from({length:count},(_,i)=>(i+1)+'번'):parseNames();}
-function renderAbs(){const l=fullList();let n=0;$('ab').innerHTML=l.map((x,i)=>{const o=absent.has(x);if(!o)n++;return '<button data-k="'+esc(x)+'" class="'+(o?'out':'')+'">'+esc(pickMode==='num'?String(i+1):x)+'</button>';}).join('');
+function renderAbs(){$('ab').classList.toggle('nm',pickMode==='name');const l=fullList();let n=0;$('ab').innerHTML=l.map((x,i)=>{const o=absent.has(x);if(!o)n++;return '<button data-k="'+esc(x)+'" class="'+(o?'out':'')+'">'+esc(pickMode==='num'?String(i+1):x)+'</button>';}).join('');
  $('ab').querySelectorAll('button').forEach(b=>b.onclick=()=>{const k=b.dataset.k;absent.has(k)?absent.delete(k):absent.add(k);renderAbs();});
  $('absNote').textContent='누르면 이번 경기에서 빠져요. 참가 '+n+'명';}
 function setPick(m){pickMode=m;lsSet('duckrace_pick',m);document.querySelectorAll('.pm').forEach(b=>b.classList.toggle('on',b.dataset.p===m));$('numBox').classList.toggle('hidden',m!=='num');$('nameBox').classList.toggle('hidden',m!=='name');renderAbs();}
