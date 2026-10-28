@@ -67,6 +67,9 @@ textarea{width:100%;height:170px;font-size:15px;padding:8px;border:3px solid var
 .ab button.out{background:#e2d7bf;color:#a89a80;border-color:#b9ab8c;text-decoration:line-through}
 .ab.nm{grid-template-columns:repeat(auto-fill,minmax(86px,1fr))}
 .ab.nm button{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px;padding:8px 6px;border-radius:999px!important}
+#cast{background:var(--cr);border:3px solid var(--gd);border-top:0;padding:4px 12px;font-size:clamp(15px,1.7vw,26px);line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#cast.flash{animation:castf .5s}
+@keyframes castf{0%{background:#ffe14d}100%{background:var(--cr)}}
 .cnum{font-size:24px;min-width:72px;text-align:center}
 #setup{max-width:1200px;margin:18px auto;padding:0 16px 24px}
 .hero{position:relative;border:4px solid var(--gd);margin-bottom:14px;background:#3c9fdc}
@@ -203,6 +206,7 @@ textarea{width:100%;height:170px;font-size:15px;padding:8px;border:3px solid var
       </div>
       <div id="result" class="hidden"><h2 id="rtitle"></h2><div id="rbody"></div></div>
     </div>
+    <div id="cast"><span id="castT">출발을 기다리고 있어요</span></div>
     <div id="mmw"><canvas id="mm" width="320" height="18"></canvas></div>
     <div class="panel">
       <div class="rk" id="rk"></div>
@@ -434,9 +438,9 @@ const laneY=i=>Y0+i*LH,wx=o=>SX+o.p*(EX-SX);
 function layout(){LH=N>1?Math.min(12,141/(N-1)):0;Y0=31+(141-(N-1)*LH)/2;}
 function resetRace(){layout();d=names.map((n,i)=>({n,i,p:0,s:null,u:0,fin:false,r:0,ph:Math.random()*9,sp:0.92+Math.random()*0.16,cheer:0,heart:0}));
  t=0;nextEv=1.5;twist=false;parts=[];fwEnd=0;fc=0;cam=0;zi=0;breads=[];hLog=[];lastK=null;resultOrder=[];
- $('zone').textContent=ZN[0][1];$('result').classList.add('hidden');msg.style.display='none';bbs.forEach(b=>b.style.display='none');}
+ $('zone').textContent=ZN[0][1];$('result').classList.add('hidden');msg.style.display='none';$('castT').textContent='출발을 기다리고 있어요';bbs.forEach(b=>b.style.display='none');}
 const msg=$('msg');
-function say(m,k){msg.classList.remove('cd');msg.textContent=m;msg.style.display='block';clearTimeout(msg._t);msg._t=setTimeout(()=>msg.style.display='none',k||1800);}
+function say(m,k){msg.classList.remove('cd');msg.style.display='none';clearTimeout(msg._t);const c=$('cast');$('castT').textContent=m;c.classList.remove('flash');void c.offsetWidth;c.classList.add('flash');}
 function setS(o,s,dur,txt){o.s=s;o.u=t+dur;if(bbs[o.i]){bbs[o.i].textContent=o.n+' '+txt;bbs[o.i].style.display='block';}}
 function fire(o,e){sfx(e[0]);if(e[0]==='swap'){const a=d.filter(x=>!x.fin&&x.p>o.p).sort((x,y)=>x.p-y.p)[0];if(!a)return fire(o,EV[1]);const q=o.p;o.p=a.p;a.p=q;setS(o,'swap',e[2],e[1]);say(o.n+' 오리, '+a.n+' 오리와 자리를 바꿨다!');return;}setS(o,e[0],e[2],e[1]);say(o.n+' 오리, '+e[3]);}
 function speed(o){let b=0.03*o.sp*(1+0.25*Math.sin(t*1.1+o.ph));if(o.cheer>t)b*=1.12;switch(o.s){case 'vortex':return -0.012;case 'rapid':return 0.1;case 'bread':return b*2.2;case 'nap':return 0;case 'rev':return -0.02;case 'turtle':return 0.05;case 'carp':return -0.04;}return b;}
