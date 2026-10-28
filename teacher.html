@@ -602,7 +602,8 @@ function pushState(){if(!roomRef)return;const rd=x=>Math.round(x*1000)/1000,r2=x
  roomRef.child('state').set(s).catch(()=>{});}
 
 let roomUrl='';
-function copyText(tx){if(navigator.clipboard&&window.isSecureContext)return navigator.clipboard.writeText(tx);return new Promise((ok,no)=>{const a=document.createElement('textarea');a.value=tx;a.style.position='fixed';a.style.opacity='0';document.body.appendChild(a);a.select();try{document.execCommand('copy')?ok():no();}catch(e){no(e);}a.remove();});}
+function copyOld(tx){return new Promise((ok,no)=>{const a=document.createElement('textarea');a.value=tx;a.setAttribute('readonly','');a.style.position='fixed';a.style.left='-9999px';document.body.appendChild(a);a.select();a.setSelectionRange(0,tx.length);let r=false;try{r=document.execCommand('copy');}catch(e){}a.remove();r?ok():no();});}
+function copyText(tx){if(navigator.clipboard&&window.isSecureContext)return navigator.clipboard.writeText(tx).catch(()=>copyOld(tx));return copyOld(tx);}
 $('qr').onclick=e=>{e.stopPropagation();$('qrBig').classList.remove('hidden');};
 $('qrBig').onclick=()=>$('qrBig').classList.add('hidden');
 $('lurl').onclick=()=>{if(!roomUrl)return;const el=$('lurl'),old=roomUrl.replace(/^https?:\/\//,'');copyText(roomUrl).then(()=>{el.textContent='주소를 복사했어요!';},()=>{el.textContent='복사하지 못했어요. 직접 선택해 주세요';}).finally(()=>setTimeout(()=>{el.textContent=old;},1500));};
