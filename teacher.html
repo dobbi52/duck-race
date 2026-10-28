@@ -736,7 +736,7 @@ function loop(n){const dt=Math.min(0.05,(n-last)/1000);last=n;
  if(phase!=='setup'){
   if(phase==='count'){const rem=Math.ceil((cdEnd-n)/1000);if(rem>0){if(rem!==lastRem){lastRem=rem;sfx('beep');}msg.classList.add('cd');msg.textContent=rem;msg.style.display='block';clearTimeout(msg._t);}else{phase='race';sfx('go');setBgm('race');say('출발! '+N+'마리 오리가 단풍 마을을 지나갑니다',2200);}t+=dt;}
   else if(phase==='race')step(dt);else t+=dt;
-  const pk=peekX!==null;const tgt=Math.min(WW-W,Math.max(0,pk?peekX-W/2:camTarget()));cam+=(tgt-cam)*Math.min(1,dt*(pk?9:2.5));
+  const pk=peekX!==null;const tgt=Math.min(WW-W,Math.max(0,pk?peekX-W/2:camTarget()));cam+=(tgt-cam)*Math.min(1,dt*(pk?9:2.5));{const zn=ZNAMES[pk?zoneAt(cam+W/2):zi];if($('zone').textContent!==zn)$('zone').textContent=zn;}
   if(phase==='lobby'){d.forEach(o=>{if(o.bbU&&t>o.bbU){o.bbU=0;bbs[o.i].style.display='none';}});
    if(DEMO){simT-=dt;if(simT<0){simT=0.5+Math.random()*0.8;const un=d.filter(o=>!claims[o.i]),cl=d.filter(o=>claims[o.i]);
     if(un.length&&(Math.random()<0.65||!cl.length)){const o=un[Math.floor(Math.random()*un.length)];const nc=Object.assign({},claims);nc[o.i]='demo';setClaims(nc);}
