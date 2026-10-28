@@ -36,6 +36,21 @@ input.code{font-size:30px;letter-spacing:.3em;text-align:center;padding:10px;bor
 .pad button{font-family:inherit;font-size:22px;padding:18px 0;border:3px solid var(--bn);background:#fff;color:var(--br);border-radius:0;touch-action:none;user-select:none;-webkit-user-select:none;cursor:pointer}
 .pad button.on{background:var(--bn);color:var(--cr)}
 .big.quack{background:#f76b15;border-color:#7a3a0a}.big.quack.cd{background:#b9ab8c;border-color:var(--bn)}
+.rotbtn{align-self:flex-end;font-family:inherit;font-size:13px;background:#fff;color:var(--br);border:2px solid var(--bn);border-radius:0;padding:4px 10px;cursor:pointer;margin-bottom:-4px}
+body.land .scr{max-width:none;min-height:100vh;border:0}
+body.land .hd{padding:3px 10px;font-size:13px}
+body.land #sRace{position:relative;display:grid;grid-template-columns:minmax(84px,17%) minmax(0,1fr) minmax(96px,19%);grid-template-rows:auto auto auto 1fr auto;grid-template-areas:"qk st pad" "qk ev pad" "qk ml pad" "qk map pad" "qk tip pad";gap:5px 10px;padding:6px 10px 8px;flex:1}
+body.land .rstat{grid-area:st}body.land .rstat .stat b{font-size:16px}body.land .rstat .stat div{padding:2px 0}
+body.land #ev{grid-area:ev;min-height:0;padding:4px 8px;font-size:13px}
+body.land .rmaplb{grid-area:ml;font-size:12px}body.land .rmap{grid-area:map;align-self:start}
+body.land .rpadlb{display:none}
+body.land .pad{grid-area:pad;grid-template-columns:1fr;grid-template-rows:1fr 1fr;gap:8px}body.land .pad button{font-size:26px;padding:0}
+body.land #qk{grid-area:qk;height:100%;font-size:26px}
+body.land .tip{grid-area:tip;font-size:11px}
+body.land .rotbtn{position:absolute;right:calc(19% + 20px);bottom:6px;top:auto;margin:0;z-index:2;font-size:11px;padding:2px 8px}
+body.land .tip{padding-right:110px}
+body.rot{overflow:hidden}
+body.rot .scr{position:fixed;left:0;top:0;width:100vh;height:100vw;min-height:0;transform:rotate(90deg) translateY(-100%);transform-origin:top left;overflow:hidden}
 .tip{font-size:13px;color:var(--bn);line-height:1.5}.tip b{font-weight:400;color:var(--br);background:#ffe9a8;padding:0 2px}
 .gauge{height:14px;border:2px solid var(--br);background:#fff}
 .gauge i{display:block;height:100%;width:0;background:#f76b15}
@@ -75,14 +90,15 @@ input.code{font-size:30px;letter-spacing:.3em;text-align:center;padding:10px;bor
   </div>
 
   <div class="bd hidden" id="sRace">
-    <div style="display:flex;gap:8px;align-items:center">
+    <button class="rotbtn" id="rot">↻ 가로로 보기</button>
+    <div class="rstat" style="display:flex;gap:8px;align-items:center">
       <div style="width:64px;background:#3c9fdc;border:3px solid var(--bn)"><canvas id="mini" width="20" height="16"></canvas></div>
       <div class="stat" style="flex:1"><div>내 순위<b id="rank">-</b></div><div>거리<b id="dist">0m</b></div></div>
     </div>
     <div class="log" id="ev">곧 출발해요!</div>
-    <div class="lb">강 지도 · 강을 눌러 빵 조각 던지기 (<span id="bc">준비됨</span>)</div>
-    <div class="box" style="padding:0;cursor:crosshair"><canvas id="map" width="160" height="36"></canvas></div>
-    <div class="lb">내 오리 조종 · 누르고 있는 동안 움직여요</div>
+    <div class="lb rmaplb">강 지도 · 강을 눌러 빵 조각 던지기 (<span id="bc">준비됨</span>)</div>
+    <div class="box rmap" style="padding:0;cursor:crosshair"><canvas id="map" width="160" height="36"></canvas></div>
+    <div class="lb rpadlb">내 오리 조종 · 누르고 있는 동안 움직여요</div>
     <div class="pad"><button id="up">▲ 위로</button><button id="dn">▼ 아래로</button></div>
     <button class="big quack" id="qk">꽥!</button>
     <div class="tip">반짝이는 <b>빠른 물살</b>을 타고, 깜빡이는 <b>소용돌이</b>와 <b>먹구름</b>은 피해요!</div>
@@ -112,7 +128,15 @@ const $=id=>document.getElementById(id);
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
 function toArr(x){if(!x)return [];if(Array.isArray(x))return x;const a=[];Object.keys(x).forEach(k=>a[+k]=x[k]);return a;}
 let cur='sJoin';
-function show(id){if(cur===id)return;['sJoin','sPick','sDeco','sRace','sDone','sMsg'].forEach(s=>$(s).classList.toggle('hidden',s!==id));cur=id;}
+function show(id){if(cur===id)return;['sJoin','sPick','sDeco','sRace','sDone','sMsg'].forEach(s=>$(s).classList.toggle('hidden',s!==id));cur=id;if(id!=='sRace')exitLand();applyLand();}
+let landFS=false,landRot=false;
+function natLand(){return innerWidth>innerHeight&&innerHeight<560;}
+function applyLand(){const on=cur==='sRace'&&(landFS||landRot||natLand());document.body.classList.toggle('land',on);document.body.classList.toggle('rot',cur==='sRace'&&landRot);
+ const b=document.getElementById('rot');if(b){b.textContent=(landFS||landRot)?'↺ 세로로 보기':'↻ 가로로 보기';b.style.display=(natLand()&&!landFS&&!landRot)?'none':'';}}
+async function enterLand(){try{if(document.documentElement.requestFullscreen&&screen.orientation&&screen.orientation.lock){await document.documentElement.requestFullscreen({navigationUI:'hide'});await screen.orientation.lock('landscape');landFS=true;applyLand();return;}}catch(e){try{if(document.fullscreenElement)await document.exitFullscreen();}catch(_){}}
+ landRot=true;applyLand();}
+function exitLand(){if(landFS){try{screen.orientation.unlock();}catch(e){}if(document.fullscreenElement)document.exitFullscreen().catch(()=>{});}landFS=false;landRot=false;applyLand();}
+addEventListener('resize',()=>applyLand());document.addEventListener('fullscreenchange',()=>{if(!document.fullscreenElement&&landFS){landFS=false;applyLand();}});
 
 /* ---------- 소리 ---------- */
 function lsG(k){try{return localStorage.getItem(k)}catch(e){return null}}
@@ -260,9 +284,10 @@ document.addEventListener('keydown',e=>{if(cur!=='sRace'||e.repeat)return;if(e.k
 document.addEventListener('keyup',e=>{if(cur!=='sRace')return;if((e.key==='ArrowUp'&&steerD===-1)||(e.key==='ArrowDown'&&steerD===1))sendSteer(0);});
 function quack(){if(me<0||qcd>0)return;qcd=3;sfx('quack');db.ref('rooms/'+code+'/quacks').push({from:me,uid}).catch(()=>{});evMsg('꽥! 큰 화면의 내 오리가 꽥 하고 외쳤어요');}
 $('qk').onclick=quack;
+$('rot').onclick=()=>{initAudio();(landFS||landRot)?exitLand():enterLand();};
 const map=$('map'),mc=map.getContext('2d');
 map.onclick=e=>{if(me<0)return;if(bcd>0){evMsg('빵 조각은 '+Math.ceil(bcd)+'초 뒤에 다시 던질 수 있어요');return;}
- const rc=map.getBoundingClientRect(),px=(e.clientX-rc.left)/rc.width*160,py=(e.clientY-rc.top)/rc.height*36;
+ const px=e.offsetX/map.clientWidth*160,py=e.offsetY/map.clientHeight*36;
  if(py<6||py>30){evMsg('강 위를 눌러 주세요');return;}
  const p=Math.max(0,Math.min(1,(px-4)/150)),y=Math.max(0,Math.min(1,(py-7)/20));bcd=8;
  db.ref('rooms/'+code+'/breads').push({p,y,from:me,uid}).catch(()=>{});sfx('toss');
