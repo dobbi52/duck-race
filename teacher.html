@@ -315,7 +315,7 @@ $('edit').onclick=()=>setEdit(true);$('eclose').onclick=cancelEdit;$('ecancel').
 $('editBox').addEventListener('mousedown',e=>{if(e.target===$('editBox'))cancelEdit();});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('editBox').classList.contains('hidden'))cancelEdit();});
 $('cls').onchange=()=>{const k=$('cls').value;loadClass(k);lsSet('duckrace_lastclass',k);setEdit(!k);};
-$('save').onclick=()=>{const k=$('cname').value.trim(),l=parseNames(),ee=m=>{$('eerr').textContent=m;};if(!k)return ee('반 이름을 적어 주세요');if(l.length<2)return ee('이름을 두 명 이상 적어 주세요');const prev=classes[k]||{};classes[k]={names:l,looks:prev.looks||{}};saveClasses();fillSel(k);lsSet('duckrace_lastclass',k);err('명단을 저장했어요');setEdit(false);};
+$('save').onclick=()=>{const k=$('cname').value.trim(),l=parseNames(),ee=m=>{$('eerr').textContent=m;};if(!k)return ee('반 이름을 적어 주세요');if(l.length<2)return ee('이름을 두 명 이상 적어 주세요');const prev=classes[k]||{};classes[k]={names:l,looks:prev.looks||{}};saveClasses();fillSel(k);lsSet('duckrace_lastclass',k);err('명단을 저장했어요');setEdit(false);cnt();};
 $('del').onclick=()=>{const k=$('cls').value;if(!k)return;if(!confirm(k+' 명단과 꾸민 오리 모양을 지울까요?'))return;delete classes[k];saveClasses();fillSel('');loadClass('');setEdit(true);};
 fillSel(lsGet('duckrace_lastclass'));if($('cls').value)loadClass($('cls').value);
 $('cnum').textContent=count+'명';setPick(pickMode);
