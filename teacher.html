@@ -689,7 +689,7 @@ function say(m,k){msg.classList.remove('cd');msg.style.display='none';clearTimeo
 const ITEMS=[['boost','🚀','부스터'],['shield','🛡️','방패'],['luck','🍀','행운'],['turtle','🐢','거북 친구']];
 const BAD={vortex:1,nap:1,rev:1,carp:1,hook:1,frog:1,scared:1,stun:1};
 const isReal=i=>!!claims[i]&&claims[i]!=='demo';
-function setTag(o){const tg=tags[o.i];if(!tg)return;let ic='';if(o.item){if(!o.iu)ic=ITEMS[o.ik][1];}else{const l=looks[o.i];if(l&&l.item!=null&&claims[o.i])ic=ITEMS[l.item][1];}tg.textContent=(nums[o.i]||o.i+1)+(ic?' '+ic:'');}
+function setTag(o){const tg=tags[o.i];if(!tg)return;let ic='';if(o.item){}else{const l=looks[o.i];if(l&&l.item!=null&&claims[o.i])ic=ITEMS[l.item][1];}tg.textContent=(nums[o.i]||o.i+1)+(ic?' '+ic:'');}
 function bubble(o,txt,dur){const b=bbs[o.i];if(!b)return;b.textContent=txt;b.style.display='block';o.quackHide=t+dur;}
 function guard(o,quiet){if(o.immune>t)return true;
  if(o.item==='shield'&&!o.iu){o.iu=1;o.immune=t+1.2;o.spark=t+1.2;setTag(o);bubble(o,o.n+' 🛡️ 방패!',1.4);sfx('shield');if(!quiet)say(o.n+' 오리, 방패로 막아냈다!');return true;}
