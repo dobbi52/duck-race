@@ -337,6 +337,7 @@ function sfx(n){if(!AC||!soundOn)return;const T=AC.currentTime;if(sfxLast[n]&&T-
  case 'fall':tone(900,0.4,'triangle',0.16,T,200);noise(0.4,0.3,T+0.35,900,250,null,'lowpass');break;
  case 'eagle':tone(1800,0.5,'sawtooth',0.07,T,1200);break;
  case 'scared':tone(1000,0.06,'square',0.08,T);break;
+ case 'quack':tone(620,0.07,'square',0.16,T,420);tone(560,0.09,'square',0.16,T+0.08,360);break;
  case 'toss':tone(500,0.15,'triangle',0.2,T,1000);break;}}
 function updSnd(){const b=document.getElementById('snd'),b2=document.getElementById('ksnd');if(b)b.textContent=soundOn?'소리 켬':'소리 끔';if(b2)b2.textContent=soundOn?'소리 켬':'소리 끔';if(MG)MG.gain.value=soundOn?1:0;}
 const SONGS={lobby:{bpm:96,wave:'triangle',mel:[72,0,76,0,79,0,76,0,74,0,77,0,76,74,72,0,69,0,72,0,76,0,74,72,71,0,74,0,72,0,0,0],bass:[48,53,45,43],hat:false},
@@ -517,6 +518,8 @@ function listen(){
  roomRef.child('claims').on('value',s=>setClaims(s.val()||{}));
  roomRef.child('looks').on('value',s=>{const v=s.val();if(!v)return;let ch=false;Object.keys(v).forEach(k=>{const i=+k,l=v[k];if(!looks[i]||!l)return;const pal=Math.min(PAL.length-1,Math.max(0,l.pal|0)),acc=Math.min(ACC.length-1,Math.max(0,l.acc|0));if(phase==='lobby'&&d[i]&&(looks[i].pal!==pal||looks[i].acc!==acc)){d[i].spark=t+0.9;sfx('blip');}if(phase==='lobby'&&l.ready&&!looks[i].ready)sfx('ready');looks[i]={pal,acc,ready:!!l.ready};if(claims[i]&&classes[clsName]){classes[clsName].looks[names[i]]={pal,acc};ch=true;}});if(ch)saveClasses();});
  roomRef.child('cheers').on('child_added',onCheer);
+ roomRef.child('ctl').on('child_added',onCtl);roomRef.child('ctl').on('child_changed',onCtl);
+ roomRef.child('quacks').on('child_added',onQuack);
  roomRef.child('breads').on('child_added',onBread);
 }
 function setClaims(nc){if(phase==='lobby'){for(const k in nc){if(nc[k]&&!claims[k])joinFx(+k);}}claims=nc;}
@@ -524,14 +527,17 @@ function joinFx(i){const o=d[i];if(!o)return;sfx('plop');o.drop=t;o.splashed=fal
 function splash(x,y){for(let k=0;k<14;k++)parts.push({k:'sp',x:x+(Math.random()*10-5),y,vx:(Math.random()-0.5)*40,vy:-12-Math.random()*22,life:0.7,c:k%2?'#ffffff':'#c4ecfb'});}
 function lobbyY(o,lk){if(phase!=='lobby')return 0;let yo=0;if(o.drop&&t-o.drop<0.5){const k=1-(t-o.drop)/0.5;yo=-Math.round(k*k*70);}else if(o.drop&&!o.splashed){o.splashed=true;splash(wx(o)+6,o.y+9);}
  if(lk.ready&&claims[o.i])yo+=(Math.floor(t*4+o.ph)%2)?-2:0;return yo;}
-function unlisten(){if(!roomRef)return;['claims','looks','cheers','breads'].forEach(k=>roomRef.child(k).off());}
+function unlisten(){if(!roomRef)return;['claims','looks','cheers','breads','ctl','quacks'].forEach(k=>roomRef.child(k).off());}
 function closeRoom(ask){if(ask&&!confirm('방을 닫을까요? 학생들의 접속이 끊기고 서버의 이름이 모두 지워져요.'))return;setBgm(null);
  if(roomRef){unlisten();roomRef.onDisconnect().cancel();roomRef.remove().catch(()=>{});}
  roomRef=null;code=null;lsSet('duckrace_lastroom','');phase='setup';$('game').classList.add('hidden');$('setup').classList.remove('hidden');}
 $('bClose').onclick=()=>closeRoom(true);
 window.addEventListener('beforeunload',()=>{if(roomRef)roomRef.remove();});
 
-const lastCheer={},lastBread={};
+const lastCheer={},lastBread={},lastQuack={};
+function onCtl(s){const v=s.val(),i=+s.key;if(!v||!d[i]||claims[i]!==v.uid)return;const o=d[i];o.steer=Math.max(-1,Math.min(1,v.d|0));o.lastCtl=t;}
+function onQuack(s){const v=s.val();s.ref.remove().catch(()=>{});if(!v)return;const from=v.from|0;if(claims[from]!==v.uid||!d[from])return;
+ const now=performance.now();if(lastQuack[from]&&now-lastQuack[from]<2800)return;lastQuack[from]=now;const qo=d[from];if(!qo.s&&bbs[from]){bbs[from].textContent=(nums[from]||from+1)+'번 꽥!';bbs[from].style.display='block';qo.quackHide=t+1.4;}sfx('quack');}
 function onCheer(s){const v=s.val();s.ref.remove().catch(()=>{});if(!v||(phase!=='race'&&phase!=='count'))return;
  const from=v.from|0,to=v.to|0;if(claims[from]!==v.uid||!d[to])return;
  const now=performance.now();if(lastCheer[from]&&now-lastCheer[from]<3500)return;lastCheer[from]=now;
@@ -548,11 +554,14 @@ const SC={vortex:1,rapid:2,bread:3,nap:4,rev:5,turtle:6,carp:7,swap:8,balloon:9,
 const EV=[['vortex','빙글빙글',1.5,'소용돌이에 빠졌다!'],['rapid','슝-!',1.3,'급류를 탔다! 쭉쭉 나간다!'],['bread','냠냠',1.8,'빵 조각 발견! 부스터 ON!'],['nap','zzz',1.8,'갑자기 낮잠... 일어나!'],['rev','어라?',1.4,'방향 착각! 거꾸로 간다!'],['turtle','거북 택시',2.6,'거북이 택시 탑승!'],['carp','깜짝!',1.0,'잉어가 튀어올라 깜짝 놀랐다!'],['swap','휙!',0.8,''],
  ['balloon','둥실~',2.0,'풍선에 매달려 하늘로 둥실!'],['hook','앗!',1.6,'낚싯바늘에 걸렸다! 뒤로 퐁당!'],['banana','미끄덩',1.4,'바나나 껍질을 밟고 쭉 미끄러진다!'],['train','칙칙폭폭',2.4,'']];
 const ZSAY=['','황금 논밭 구간 진입! 허수아비가 지켜본다','연꽃 호수! 개구리들이 연잎 위에서 구경한다','대나무 숲 구간! 물살이 거세진다','폭포 계곡! 저 앞에 폭포가 보인다','강변 축제 구간! 결승선이 보인다!'];
+let cur={y:105,ty:105,nt:6},spots=[],nextSpot=9;const MIDY=(BY0+BY1)/2+5,CURH=13;
+function inCloud(o){return cloud&&Math.abs(wx(o)+6-cloud.x)<cloud.w/2&&(cloud.half?o.y+5>=MIDY:o.y+5<MIDY);}
+function manual(o){return t-(o.lastCtl??-99)<6;}
 let d=[],t=0,nextEv=1,nextG=8,lastG='',twist=false,fc=0,cam=0,zi=0,breads=[],hLog=[],lastK=null,kseq=0,cdEnd=0,LH=6,Y0=31,tags=[],bbs=[],cloud=null,rainbowEnd=0,eagle=null,wfSaid=false;
 const laneY=i=>Y0+i*LH,wx=o=>SX+o.p*(EX-SX),KS=()=>200/LEN;
 function layout(){LH=N>1?Math.min(12,(BY1-BY0)/(N-1)):0;Y0=BY0+((BY1-BY0)-(N-1)*LH)/2;}
 function resetRace(){layout();d=names.map((n,i)=>({n,i,p:0,s:null,u:0,st:0,dur:1,fin:false,r:0,ph:Math.random()*9,sp:0.92+Math.random()*0.16,cheer:0,heart:0,y:laneY(i),ty:laneY(i),ny:2+Math.random()*3,scat:0,wf:false,lead:null,tk:0}));
- t=0;nextEv=1.5;nextG=7+Math.random()*3;lastG='';twist=false;parts=[];fwEnd=0;fc=0;cam=0;zi=0;breads=[];hLog=[];lastK=null;resultOrder=[];cloud=null;rainbowEnd=0;eagle=null;wfSaid=false;
+ t=0;nextEv=1.5;nextG=7+Math.random()*3;lastG='';twist=false;parts=[];fwEnd=0;fc=0;cam=0;zi=0;breads=[];hLog=[];lastK=null;resultOrder=[];cloud=null;rainbowEnd=0;eagle=null;wfSaid=false;cur={y:(BY0+BY1)/2+5,ty:(BY0+BY1)/2+5,nt:6};spots=[];nextSpot=9;
  $('zone').textContent=ZNAMES[0];$('result').classList.add('hidden');msg.style.display='none';$('castT').textContent='출발을 기다리고 있어요';bbs.forEach(b=>b.style.display='none');}
 const msg=$('msg');
 function say(m,k){msg.classList.remove('cd');msg.style.display='none';clearTimeout(msg._t);const c=$('cast');$('castT').textContent=m;c.classList.remove('flash');void c.offsetWidth;c.classList.add('flash');}
@@ -562,7 +571,7 @@ function fire(o,e){
  if(e[0]==='train'){const ox=wx(o);const fl=d.filter(x=>x!==o&&!x.fin&&!x.s&&wx(x)<ox&&ox-wx(x)<90).sort((a,b)=>wx(b)-wx(a)).slice(0,3);if(!fl.length)return fire(o,EV[1]);
   sfx('train');setS(o,'train',2.4,'칙칙폭폭');fl.forEach((x,k)=>{setS(x,'train',2.4,'');x.lead=o;x.tk=k+1;});say(o.n+' 오리 기차 출발! '+fl.map(x=>x.n).join(', ')+' 오리가 줄줄이 따라붙었다!');return;}
  sfx(e[0]);setS(o,e[0],e[2],e[1]);say(o.n+' 오리, '+e[3]);}
-function speed(o){let b=0.03*o.sp*(1+0.25*Math.sin(t*1.1+o.ph));if(o.cheer>t)b*=1.12;if(rainbowEnd>t)b*=1.45;if(cloud&&Math.abs(wx(o)+6-cloud.x)<cloud.w/2)b*=0.45;
+function speed(o){let b=0.03*o.sp*(1+0.25*Math.sin(t*1.1+o.ph));if(o.cheer>t)b*=1.12;if(rainbowEnd>t)b*=1.45;if(inCloud(o))b*=0.45;if(Math.abs(o.y+5-cur.y)<CURH)b*=1.18;
  switch(o.s){case 'vortex':return -0.012;case 'rapid':return 0.1;case 'bread':return b*2.2;case 'nap':return 0;case 'rev':return -0.02;case 'turtle':return 0.05;case 'carp':return -0.04;
   case 'balloon':return 0.085;case 'hook':return 0;case 'banana':return 0.08;case 'train':return 0.07;case 'swan':return 0.075;case 'frog':return -0.01;case 'fall':return 0.01;case 'scared':return 0.004;}return b;}
 function altOf(o){if(!o.s)return 0;const pr=Math.min(1,Math.max(0,(t-o.st)/o.dur));
@@ -572,7 +581,7 @@ function altOf(o){if(!o.s)return 0;const pr=Math.min(1,Math.max(0,(t-o.st)/o.dur
  return 0;}
 function groupEvent(live){const opts=['swan','cloud','rainbow','eagle'].filter(x=>x!==lastG);const e=opts[Math.floor(Math.random()*opts.length)];lastG=e;
  if(e==='swan'){const c=live.filter(o=>!o.s);if(c.length<2)return;const a=c.splice(Math.floor(Math.random()*c.length),1)[0],b=c[Math.floor(Math.random()*c.length)];sfx('swan');setS(a,'swan',2.6,'백조 택시');setS(b,'swan',2.6,'백조 택시');say('백조가 나타나 '+a.n+', '+b.n+' 오리를 등에 태우고 간다!');}
- else if(e==='cloud'){const s=live.slice().sort((a,b)=>b.p-a.p),o=s[Math.floor(s.length*(0.2+Math.random()*0.5))];cloud={x:wx(o)+10,w:120,end:t+4.5};sfx('rain');say('먹구름이 몰려왔다! 비 맞는 오리들은 느릿느릿...');}
+ else if(e==='cloud'){const s=live.slice().sort((a,b)=>b.p-a.p),o=s[Math.floor(s.length*(0.2+Math.random()*0.5))];const hf=Math.random()<0.5?0:1;cloud={x:wx(o)+30,w:140,end:t+5,half:hf};sfx('rain');say('먹구름이 강 '+(hf?'아래쪽':'위쪽')+'에 몰려왔다! '+(hf?'위로':'아래로')+' 피하면 비를 안 맞아요!');}
  else if(e==='rainbow'){rainbowEnd=t+3.5;sfx('rainbow');say('무지개가 떴다! 모두 신나서 쭉쭉 헤엄친다!');}
  else{eagle={st:t,end:t+1.8};sfx('eagle');live.forEach(o=>{o.ty=BY0+Math.random()*(BY1-BY0);o.scat=t+1.3;if(!o.s&&Math.random()<0.45)setS(o,'scared',0.7,'!');});say('하늘에 독수리 그림자! 오리들이 깜짝 놀라 흩어진다!');}}
 function step(dt){t+=dt;const ks=KS(),gp=15/(EX-SX);
@@ -581,16 +590,23 @@ function step(dt){t+=dt;const ks=KS(),gp=15/(EX-SX);
   o.p=Math.max(0,o.p+speed(o)*ks*dt);
   if(o.s==='train'&&o.lead){if(o.lead.fin||o.lead.s!=='train'){o.lead=null;}else{const tp=o.lead.p-gp*o.tk;if(o.p>tp)o.p=tp;else o.p+=(tp-o.p)*Math.min(1,dt*3);o.ty=o.lead.y;}}
   if(!o.wf&&wx(o)+6>WFX){o.wf=true;if(!wfSaid){wfSaid=true;say('폭포다! 모두 아래로 풍덩! 순서가 뒤죽박죽!');}sfx('fall');splash(wx(o)+6,o.y+9);setS(o,'fall',0.4+Math.random()*1.9,'풍덩!');o.ty=BY0+Math.random()*(BY1-BY0);}
-  if(phase==='race'){if(t>o.ny){o.ny=t+2+Math.random()*3;o.ty=Math.max(BY0,Math.min(BY1,o.y+(Math.random()-0.5)*50));}
-   const vm=(o.scat>t)?45:(o.s==='rapid'||o.s==='banana'?22:10),dy=o.ty-o.y;o.y+=Math.max(-vm*dt,Math.min(vm*dt,dy));}
+  if(phase==='race'){const man=manual(o);let vm=(o.scat>t)?45:(o.s==='rapid'||o.s==='banana'?22:10);
+   if(man){if(o.steer){o.ty=o.y+o.steer*40;vm=Math.max(vm,26);}else if(!(o.scat>t))o.ty=o.y;}
+   else if(t>o.ny){o.ny=t+2+Math.random()*3;o.ty=Math.random()<0.55?cur.y-5+(Math.random()-0.5)*14:o.y+(Math.random()-0.5)*50;}
+   if(!man){for(const sp of spots){const ax=sp.x-(wx(o)+6);if(ax>0&&ax<70&&Math.abs(sp.y-(o.y+5))<16){o.ty=o.y+(sp.y>o.y+5?-30:30);break;}}if(inCloud(o)&&Math.random()<dt*0.8)o.ty=cloud.half?BY0+10:BY1-10;}
+   o.ty=Math.max(BY0,Math.min(BY1,o.ty));const dy=o.ty-o.y;o.y+=Math.max(-vm*dt,Math.min(vm*dt,dy));
+   for(const sp of spots){if(t>=sp.born&&!o.s&&Math.abs(sp.x-(wx(o)+6))<9&&Math.abs(sp.y-(o.y+5))<9){sfx('vortex');setS(o,'vortex',1.3,'빙글빙글');say(o.n+' 오리, 소용돌이 지점에 빠졌다!');break;}}}
   const fx=wx(o)+12,ly=o.y+5;
-  for(const b of breads){if(b.eaten)continue;if(b.x>fx&&b.x-fx<70&&Math.abs(b.y-ly)<40)o.ty=b.y-5;
+  for(const b of breads){if(b.eaten)continue;if(!manual(o)&&b.x>fx&&b.x-fx<70&&Math.abs(b.y-ly)<40)o.ty=b.y-5;
    if(altOf(o)>-4&&fx>=b.x&&fx<=b.x+6&&Math.abs(ly-b.y)<=7){b.eaten=true;setS(o,'bread',1.8,'냠냠');sfx('bread');say(o.n+' 오리, '+names[b.from]+'의 빵 조각을 먹었다!');lastK=[o.i,b.from,++kseq];break;}}
   if(o.p>=1){o.p=1;o.fin=true;o.r=++fc;o.s=null;o.lead=null;bbs[o.i].style.display='none';if(fc===1){say(o.n+' 오리 1착으로 골인!',2200);fwEnd=t+5;sfx('goal');fanfare();}else sfx('goal2');}});
  const sw=d.filter(o=>!o.fin&&o.s!=='balloon'&&o.s!=='hook').sort((a,b)=>a.p-b.p);
  for(let a=0;a<sw.length;a++){const p=sw[a],px=wx(p);for(let b=a+1;b<sw.length;b++){const q=sw[b],dx=wx(q)-px;if(dx>14)break;const dy=q.y-p.y;if(Math.abs(dy)<9){const f=(9-Math.abs(dy))*dt*3*(dy>=0?1:-1)+(dy===0?(Math.random()-0.5):0);p.y-=f;q.y+=f;}}}
  d.forEach(o=>{o.y=Math.max(BY0,Math.min(BY1,o.y));});
  if(cloud){cloud.x+=8*dt;if(t>cloud.end)cloud=null;}if(eagle&&t>eagle.end)eagle=null;
+ if(t>cur.nt){cur.nt=t+7+Math.random()*4;cur.ty=BY0+18+Math.random()*(BY1-BY0-26);}cur.y+=Math.max(-7*dt,Math.min(7*dt,cur.ty-cur.y));
+ if(t>nextSpot&&phase==='race'){nextSpot=t+8+Math.random()*5;const lx0=Math.max(...d.filter(o=>!o.fin).map(wx).concat([0]));const sx=lx0+110+Math.random()*120;if(sx<FX-60&&Math.abs(sx-WFX)>40)spots.push({x:sx,y:BY0+12+Math.random()*(BY1-BY0-14),born:t+1.6,end:t+7.5});}
+ spots=spots.filter(sp=>t<sp.end);
  const live=d.filter(o=>!o.fin),lx=Math.max(...d.map(wx));
  if(zi<5&&lx>ZX[zi+1]){zi++;$('zone').textContent=ZNAMES[zi];say(ZSAY[zi]);}
  if(!twist&&live.length>3){const s=live.slice().sort((a,b)=>b.p-a.p);if(s[0].p>0.86){twist=true;bgmFast=true;setS(s[0],'vortex',2,'빙글빙글');s.slice(N>=6?-3:-1).forEach(o=>setS(o,'rapid',2.4,'슝-!'));say('마지막 구간 대역전 찬스! 뒤에 있던 오리들이 급류를 탔다!');}}
@@ -623,11 +639,11 @@ function showResult(){const o=resultOrder.map(i=>names[i]);let h,b;
  $('result').classList.remove('hidden');const qq=$('rbody').querySelector('.q');if(qq)setTimeout(()=>qq.classList.add('shown'),2600);}
 function updPanel(){$('bStart').classList.toggle('hidden',phase!=='lobby');$('bAgain').classList.toggle('hidden',phase!=='done');}
 
-function stCode(o){if(o.fin)return 0;if(o.s)return SC[o.s]||0;if(cloud&&Math.abs(wx(o)+6-cloud.x)<cloud.w/2)return 14;if(rainbowEnd>t)return 15;return 0;}
+function stCode(o){if(o.fin)return 0;if(o.s)return SC[o.s]||0;if(inCloud(o))return 14;if(rainbowEnd>t)return 15;return 0;}
 function pushState(){if(!roomRef)return;const rd=x=>Math.round(x*1000)/1000,r2=x=>Math.round(x*100)/100;
  const s={p:d.map(o=>rd(o.p)),s:d.map(stCode),r:d.map(o=>o.r),z:zi,y:d.map(o=>r2((o.y-BY0)/(BY1-BY0))),
   b:breads.filter(b=>!b.eaten).map(b=>[rd((b.x-12-SX)/(EX-SX)),r2((b.y-5-BY0)/(BY1-BY0)),b.from]),
-  h:hLog.splice(0)};if(lastK)s.k=lastK;
+  h:hLog.splice(0),cb:r2((cur.y-5-BY0)/(BY1-BY0)),vs:spots.map(sp=>[rd((sp.x-6-SX)/(EX-SX)),r2((sp.y-5-BY0)/(BY1-BY0)),t>=sp.born?1:0]),cl:cloud?[rd((cloud.x-cloud.w/2-SX)/(EX-SX)),rd((cloud.x+cloud.w/2-SX)/(EX-SX)),cloud.half]:0};if(lastK)s.k=lastK;
  roomRef.child('state').set(s).catch(()=>{});}
 
 let roomUrl='';
@@ -669,8 +685,12 @@ function scene(){const c=Math.round(cam);cx.drawImage(bg,c,0,W,H,0,0,W,H);
  for(const p of PEOPLE){const sx=p.x-c;if(sx<-4||sx>W)continue;const near=d.some(o=>Math.abs(wx(o)+6-p.x)<38),top=Math.abs(lead+6-p.x)<38&&phase!=='lobby';
   const jy=near&&(Math.floor(t*(top?10:7)+p.x)%2)?(top?-3:-2):0;person(cx,sx,14+jy,p.c);if(near){R(cx,sx-1,15+jy-(top?2:1),1,2,'#f2c9a0');R(cx,sx+3,15+jy-(top?2:1),1,2,'#f2c9a0');}}
  for(const b of breads){if(b.eaten)continue;const x=b.x-c;if(x<-6||x>W)continue;const bob=Math.sin(t*3+b.x)>0?0:1;R(cx,x-1,b.y-2+bob,6,4,'#3b2412');R(cx,x,b.y-1+bob,4,2,'#f0c27a');R(cx,x+1,b.y-1+bob,1,1,'#fff3c4');}
- if(cloud){const ccx=cloud.x-c;if(ccx>-cloud.w&&ccx<W+cloud.w){for(let k=0;k<Math.floor(cloud.w/3);k++){const rx=ccx-cloud.w/2+((k*29)%cloud.w),ry=44+((k*41+t*90)%130);R(cx,rx,ry,1,3,'#cfe6f5');}
-  cx.globalAlpha=0.18;R(cx,ccx-cloud.w/2,30,cloud.w,152,'#1d2b3a');cx.globalAlpha=1;}}
+ if(cloud){const ccx=cloud.x-c;if(ccx>-cloud.w&&ccx<W+cloud.w){for(let k=0;k<Math.floor(cloud.w/3);k++){const rx=ccx-cloud.w/2+((k*29)%cloud.w),ry=(cloud.half?MIDY:34)+((k*41+t*90)%(cloud.half?183-MIDY-4:MIDY-38));R(cx,rx,ry,1,3,'#cfe6f5');}
+  cx.globalAlpha=0.24;R(cx,ccx-cloud.w/2,cloud.half?MIDY:30,cloud.w,cloud.half?183-MIDY:MIDY-30,'#1d2b3a');cx.globalAlpha=1;if(cloud.half){R(cx,ccx-cloud.w/2,MIDY,cloud.w,1,'#cfe6f5');}}}
+ cx.globalAlpha=0.13;R(cx,0,Math.round(cur.y-CURH),W,CURH*2,'#ffffff');cx.globalAlpha=1;
+ for(let k=0;k<Math.floor(W/6);k++){const x=((k*53+t*70)%(W+40))-20,y=Math.round(cur.y-CURH+2+((k*7)%(CURH*2-4)));R(cx,x,y,5,1,'#e6fbff');}
+ for(const sp of spots){const sx=sp.x-c;if(sx<-20||sx>W+20)continue;if(t<sp.born){if(Math.floor(t*6)%2){for(let a=0;a<16;a++){const an=a/16*6.28;R(cx,sx+Math.cos(an)*10,sp.y+Math.sin(an)*5,1,1,'#ffe14d');}R(cx,sx-1,sp.y-12,2,5,'#ffe14d');R(cx,sx-1,sp.y-6,2,1,'#ffe14d');}}
+  else{for(let ring=0;ring<3;ring++){for(let a=0;a<14;a++){const an=a/14*6.28+t*(4+ring)+ring;R(cx,sx+Math.cos(an)*(4+ring*3),sp.y+Math.sin(an)*(2+ring*1.5),2,1,ring===2?'#2f86c4':'#ffffff');}}}}
  let behind=0;const order=d.slice().sort((a,b)=>a.y-b.y);
  order.forEach(o=>{const lk0=looks[o.i]||defLook(o.i),x=wx(o)-c,bob=Math.sin(t*5+o.ph)>0?0:1,al=altOf(o),y=Math.round(o.y)+bob+lobbyY(o,lk0)+al,tg=tags[o.i],bb=bbs[o.i];
   if(x<-14){behind++;tg.style.display='none';bb.style.visibility='hidden';return;}
@@ -698,11 +718,12 @@ function scene(){const c=Math.round(cam);cx.drawImage(bg,c,0,W,H,0,0,W,H);
   if(o.s==='carp'){const ph=Math.max(0,o.u-t),fy=y+4-Math.sin(ph*3.14)*9;R(cx,x+15,fy,7,4,'#3b2412');R(cx,x+16,fy+1,5,2,'#f08a24');R(cx,x+21,fy,2,4,'#f08a24');R(cx,x+16,fy+1,1,1,'#111');}
   if(o.s==='swap'){R(cx,x+3,y-3,1,1,'#ffe14d');R(cx,x+10,y-2,1,1,'#fff');R(cx,x+6,y-4,1,1,'#fff');}
   if(o.heart>t){heart(cx,x+4,y-7-Math.round((1.3-(o.heart-t))*4));}
+  if(o.quackHide&&t>o.quackHide){o.quackHide=0;if(!o.s)bb.style.display='none';}
   if(o.fin&&o.r<=3){const mc=['#ffd400','#d0d2d8','#d08a3a'][o.r-1];R(cx,x+3,y-3,3,3,'#3b2412');R(cx,x+4,y-2,1,1,mc);}
   tg.style.background=phase==='lobby'?(lk.ready?'#2e8b1f':(claims[o.i]?'#3b2412':'#8a7a60')):'#3b2412';
   tg.style.left=(x/W*100)+'%';tg.style.top=((y+5)/H*100)+'%';bb.style.left=((x+4)/W*100)+'%';bb.style.top=(y/H*100)+'%';});
  for(const q of parts){const sx=q.x-c;if(sx<-3||sx>W)continue;if(q.k==='leaf')R(cx,sx,q.y,2,1,q.c);else if(q.k==='conf')R(cx,sx,q.y,1,2,q.c);else R(cx,sx,q.y,1,1,q.c);}
- if(cloud){const ccx=cloud.x-c;if(ccx>-cloud.w&&ccx<W+cloud.w){for(let k=0;k<7;k++){const px=ccx-cloud.w/2+8+k*(cloud.w-16)/6,py=30+(k%2)*3;disc(cx,Math.round(px),Math.round(py),9,'#3b2412');disc(cx,Math.round(px),Math.round(py),8,k%2?'#7d8796':'#8f99a8');}}}
+ if(cloud){const ccx=cloud.x-c;if(ccx>-cloud.w&&ccx<W+cloud.w){for(let k=0;k<(cloud.half?0:7);k++){const px=ccx-cloud.w/2+8+k*(cloud.w-16)/6,py=(cloud.half?MIDY-3:30)+(k%2)*2,rr=cloud.half?6:8;cx.globalAlpha=cloud.half?0.7:1;disc(cx,Math.round(px),Math.round(py),rr+1,'#3b2412');disc(cx,Math.round(px),Math.round(py),rr,k%2?'#7d8796':'#8f99a8');cx.globalAlpha=1;}}}
  if(rainbowEnd>t){const a=Math.min(1,(rainbowEnd-t)/0.8,(t-(rainbowEnd-3.5))/0.5);cx.globalAlpha=Math.max(0,a)*0.7;['#e5484d','#f76b15','#ffd93d','#30a46c','#3e63dd','#8e4ec6'].forEach((col,k)=>{const r=W*0.48-k*4;for(let s=0;s<=60;s++){const an=Math.PI+s/60*Math.PI;R(cx,W/2+Math.cos(an)*r,210+Math.sin(an)*(r*0.95),3,3,col);}});cx.globalAlpha=1;}
  if(eagle){const pr=(t-eagle.st)/(eagle.end-eagle.st),ex=-60+pr*(W+120),ey=60+Math.sin(pr*6)*10,fl=Math.floor(t*6)%2;cx.globalAlpha=0.35;R(cx,ex,ey,30,5,'#14202c');R(cx,ex+8,ey-6+(fl?2:0),14,6,'#14202c');R(cx,ex+8,ey+5-(fl?2:0),14,6,'#14202c');R(cx,ex+30,ey+1,6,3,'#14202c');cx.globalAlpha=1;}
  const be=$('behind');if(behind){be.style.display='block';be.textContent='◀ 뒤에 '+behind+'마리';}else be.style.display='none';

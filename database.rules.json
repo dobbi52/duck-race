@@ -1,0 +1,49 @@
+{
+  "rules": {
+    "rooms": {
+      "$code": {
+        ".read": "auth != null",
+        ".write": "auth != null && (!data.exists() || data.child('host').val() === auth.uid)",
+        "claims": {
+          "$i": {
+            ".write": "auth != null && root.child('rooms').child($code).child('host').exists() && ((!data.exists() && newData.val() === auth.uid) || (data.val() === auth.uid && (!newData.exists() || newData.val() === auth.uid)))"
+          }
+        },
+        "looks": {
+          "$i": {
+            ".write": "auth != null && root.child('rooms').child($code).child('claims').child($i).val() === auth.uid",
+            ".validate": "newData.hasChildren(['pal', 'acc', 'ready']) && newData.child('pal').isNumber() && newData.child('acc').isNumber() && newData.child('ready').isBoolean()"
+          }
+        },
+        "cheers": {
+          "$id": {
+            ".write": "auth != null && !data.exists() && newData.child('uid').val() === auth.uid && root.child('rooms').child($code).child('status').val() === 'racing'"
+          }
+        },
+        "breads": {
+          "$id": {
+            ".write": "auth != null && !data.exists() && newData.child('uid').val() === auth.uid && root.child('rooms').child($code).child('status').val() === 'racing'"
+          }
+        },
+        "ctl": {
+          "$i": {
+            ".write": "auth != null && root.child('rooms').child($code).child('claims').child($i).val() === auth.uid",
+            ".validate": "newData.hasChildren(['d','uid']) && newData.child('d').isNumber() && newData.child('uid').val() === auth.uid"
+          }
+        },
+        "quacks": {
+          "$id": {
+            ".write": "auth != null && !data.exists() && newData.child('uid').val() === auth.uid && root.child('rooms').child($code).child('status').val() === 'racing'"
+          }
+        }
+      }
+    },
+    "stats": {
+      ".read": true,
+      "$k": {
+        ".write": "auth != null && ($k === 'race' || $k === 'claw')",
+        ".validate": "newData.isNumber() && newData.val() === (data.exists() ? data.val() : 0) + 1"
+      }
+    }
+  }
+}
