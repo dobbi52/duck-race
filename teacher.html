@@ -50,7 +50,8 @@ textarea{width:100%;height:170px;font-size:15px;padding:8px;border:3px solid var
 #result{position:absolute;left:8%;right:8%;top:8%;background:var(--cr);border:4px solid var(--bn);padding:2%;z-index:7;text-align:center;max-height:84%;overflow:auto}
 #result.wide{left:2%;right:2%;top:4%;max-height:92%;padding:1.2% 1.5% 1.6%}
 #result .q{display:grid;gap:calc(var(--u)*2.2);margin-top:calc(var(--u)*1.5)}
-#result .qc{position:relative;background:#fff;border:calc(var(--u)*.8) solid var(--br);padding:calc(var(--u)*1) 0 calc(var(--u)*1.2);opacity:0;animation:qin .35s ease-out forwards}
+#result .qc{position:relative;background:#fff;border:calc(var(--u)*.8) solid var(--br);padding:calc(var(--u)*1) 0 calc(var(--u)*1.2);animation:qin .35s ease-out both}
+#result .q.shown .qc{animation:none;opacity:1}
 @keyframes qin{0%{opacity:0;transform:translateY(calc(var(--u)*-6)) scale(.8)}100%{opacity:1;transform:none}}
 #result .qc .rk{position:absolute;left:0;top:0;background:var(--br);color:var(--cr);font-size:calc(var(--u)*6);line-height:1.2;min-width:calc(var(--u)*9);padding:0 calc(var(--u)*1.2)}
 #result .qc canvas{display:block;width:62%;margin:calc(var(--u)*2.5) auto 0;image-rendering:pixelated}
@@ -604,7 +605,7 @@ function showResult(){const o=resultOrder.map(i=>names[i]);let h,b;
   b='<div class="q" style="grid-template-columns:repeat('+cols+',minmax(0,1fr))">'+o.map((nm,i)=>'<div class="qc'+(i<3?' g'+(i+1):'')+'" style="animation-delay:'+(i*dl).toFixed(2)+'s"><span class="rk">'+(i+1)+'</span><canvas width="30" height="18" data-i="'+resultOrder[i]+'"></canvas><div class="nm">'+esc(nm)+'</div></div>').join('')+'</div>';}
  $('result').classList.toggle('wide',mode==='all');$('rtitle').textContent=h;$('rbody').innerHTML=b;
  $('rbody').querySelectorAll('canvas[data-i]').forEach(cv2=>{const i=+cv2.dataset.i,ctx=cv2.getContext('2d');duck(ctx,8,6,looks[i]||defLook(i),false,0,null);});
- $('result').classList.remove('hidden');}
+ $('result').classList.remove('hidden');const qq=$('rbody').querySelector('.q');if(qq)setTimeout(()=>qq.classList.add('shown'),2600);}
 function updPanel(){$('bStart').classList.toggle('hidden',phase!=='lobby');$('bAgain').classList.toggle('hidden',phase!=='done');}
 
 function stCode(o){if(o.fin)return 0;if(o.s)return SC[o.s]||0;if(cloud&&Math.abs(wx(o)+6-cloud.x)<cloud.w/2)return 14;if(rainbowEnd>t)return 15;return 0;}
