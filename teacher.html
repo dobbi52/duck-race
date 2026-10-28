@@ -114,6 +114,8 @@ textarea{width:100%;height:170px;font-size:15px;padding:8px;border:3px solid var
 .kcard canvas{width:calc(var(--cu)*75);margin:calc(var(--cu)*2) auto 0;image-rendering:pixelated}
 .kcard .kn{font-size:calc(var(--cu)*22);color:#c0392b;line-height:1.1}
 .kcard .kname{font-size:calc(var(--cu)*11);color:var(--br);line-height:1.2;margin-bottom:calc(var(--cu)*2)}
+.kmarq{position:absolute;top:8.3%;left:50%;transform:translate(-50%,-50%);font-size:calc(var(--cu)*12);color:#ffd93d;text-shadow:0 calc(var(--cu)*1) 0 #3b2412;white-space:nowrap;pointer-events:none;letter-spacing:.08em}
+.kchute{position:absolute;top:78.5%;transform:translate(-50%,-50%);font-size:calc(var(--cu)*5.5);color:#fff6d8;white-space:nowrap;pointer-events:none}
 .kbar{display:flex;gap:8px;align-items:center;padding:8px 10px;background:var(--cr);border:3px solid #3b2412;border-top:0;margin-top:0;flex-wrap:wrap}
 .kbar .btn{font-size:14px;padding:5px 12px;border-width:2px}
 .kbar .kgo{font-size:20px!important;padding:8px 30px!important;background:#ffd93d;border:3px solid var(--br)!important;box-shadow:0 4px 0 var(--br)}
@@ -183,6 +185,7 @@ textarea{width:100%;height:170px;font-size:15px;padding:8px;border:3px solid var
   </div>
   <div id="kstage">
     <canvas id="kcv" width="320" height="180"></canvas>
+    <div class="kmarq" id="kmarq">오리 뽑기</div><div class="kchute" id="kchute">꺼내는 곳</div>
     <div id="kres" class="hidden"><div class="kcard"><div class="ks">오늘의 발표자</div><canvas id="kbig" width="30" height="20"></canvas><div class="kn" id="kn">7번</div><div class="kname" id="kname"></div><div class="ks">뽑기 버튼(또는 스페이스바)을 누르면 다음 친구를 뽑아요</div></div></div>
   </div>
   <div class="kbar">
@@ -332,6 +335,10 @@ let W=320;const H=200,WW=1640,FX=1590,SX=14,EX=FX-13,BX=760;
 const cv=$('cv'),cx=cv.getContext('2d'),st=$('stage'),mm=$('mm'),mx=mm.getContext('2d');
 const bg=document.createElement('canvas');bg.width=WW;bg.height=H;const g=bg.getContext('2d');
 function R(c,x,y,w,h,col){c.fillStyle=col;c.fillRect(Math.round(x),Math.round(y),w,h);}
+const PF={'0':['111','101','101','101','111'],'1':['010','110','010','010','111'],'2':['111','001','111','100','111'],'3':['111','001','111','001','111'],'4':['101','101','111','001','001'],'5':['111','100','111','001','111'],'6':['111','100','111','101','111'],'7':['111','001','001','010','010'],'8':['111','101','111','101','111'],'9':['111','101','111','001','111'],'m':['00000','11110','10101','10101','10101']};
+function pText(c,x,y,str,col){let cx=x;for(const ch of String(str)){const g=PF[ch];if(!g){cx+=3;continue;}g.forEach((row,ry)=>{for(let rx=0;rx<row.length;rx++)if(row[rx]==='1')R(c,cx+rx,y+ry,1,1,col);});cx+=g[0].length+1;}return cx-x-1;}
+function pW(str){let w=0;for(const ch of String(str))w+=(PF[ch]?PF[ch][0].length:2)+1;return w-1;}
+function pTag(c,x,y,str){const w=pW(str);R(c,x,y,w+4,9,'#3b2412');R(c,x+1,y+1,w+2,7,'#3b2412');pText(c,x+2,y+2,str,'#fff6d8');return w+4;}
 function disc(c,x0,y0,r,col){c.fillStyle=col;for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++)if(dx*dx+dy*dy<=r*r+r)c.fillRect(x0+dx,y0+dy,1,1);}
 function tree(c,x,y,r,a,b){R(c,x-1,y+r-1,3,5,'#3b2412');R(c,x,y+r-1,1,4,'#7a4a21');disc(c,x,y,r+1,'#3b2412');disc(c,x,y,r,a);disc(c,x-1,y-1,Math.max(1,r-2),b);}
 function house(c,x,y){R(c,x,y+6,16,9,'#3b2412');R(c,x+1,y+7,14,7,'#f1dfb3');R(c,x+3,y+9,3,5,'#7a4a21');R(c,x+9,y+9,4,3,'#3b2412');R(c,x+10,y+10,2,1,'#9ad1f0');for(let k=0;k<5;k++){R(c,x-2+k,y+5-k,20-2*k,1,'#3b2412');R(c,x-1+k,y+5-k,18-2*k,1,k%2?'#6b7385':'#4b5263');}}
@@ -362,7 +369,7 @@ function drawBG(){
  for(let r=0;r<39;r++){R(g,FX+4,28+r*4,2,2,r%2?'#fff':'#3b2412');R(g,FX+6,30+r*4,2,2,r%2?'#3b2412':'#fff');}
  R(g,FX+3,4,2,24,'#3b2412');R(g,FX+5,4,10,6,'#e5484d');R(g,FX+5,4,10,1,'#3b2412');R(g,FX+3,184,2,14,'#3b2412');
  g.font='8px Galmuri9, monospace';g.textBaseline='top';
- [50,100,150].forEach(m=>{const x=SX+(m/200)*(EX-SX)+6;R(g,x+7,192,2,7,'#3b2412');R(g,x,185,17,9,'#3b2412');R(g,x+1,186,15,7,'#fff6d8');g.fillStyle='#3b2412';g.fillText(m+'m',x+2,186);});
+ [50,100,150].forEach(m=>{const x=SX+(m/200)*(EX-SX)+6;R(g,x+7,192,2,7,'#3b2412');const w=pW(m+'m')+4;R(g,x,185,w,9,'#3b2412');R(g,x+1,186,w-2,7,'#fff6d8');pText(g,x+2,187,m+'m','#3b2412');});
 }
 drawBG();if(document.fonts)document.fonts.ready.then(drawBG);
 
@@ -654,30 +661,28 @@ function kDraw(){const c=kc,G=kg(),W=KW;
  R(c,0,0,W,KH,'#d9472b');
  R(c,10,4,W-20,22,'#3b2412');R(c,12,6,W-24,18,'#2b1d10');
  const nL=Math.floor((W-28)/8);for(let k=0;k<nL;k++){const on=(k+Math.floor(kt*6))%3===0;R(c,14+k*8,7,3,2,on?'#ffe14d':'#7a5a2a');R(c,14+k*8,21,3,2,on?'#ffe14d':'#7a5a2a');}
- c.font='12px Galmuri11, monospace';c.textAlign='center';c.textBaseline='middle';c.fillStyle='#3b2412';c.fillText('오리 뽑기',W/2+1,16);c.fillStyle='#ffd93d';c.fillText('오리 뽑기',W/2,15);
  R(c,G.GX0,28,G.GX1-G.GX0,132,'#3b2412');R(c,G.GX0+2,30,G.GX1-G.GX0-4,128,'#bfe6f5');for(let y=34;y<96;y+=8)for(let x=G.GX0+4+(y/8%2)*8;x<G.GX1-2;x+=16)R(c,x,y,8,4,'#cdeef9');
  R(c,G.GX0+2,98,G.GX1-G.GX0-4,60,'#3c9fdc');for(let x=G.GX0+2;x<G.GX1-2;x+=6)R(c,x,98+(Math.floor(kt*3+x/6)%2),4,1,'#8fd8f5');
  for(let k=0;k<Math.floor(W/10);k++){const x=G.GX0+2+((k*41+kt*8)%(G.GX1-G.GX0-4)),y=104+(k*13)%50;R(c,x,y,3,1,'#62bdeb');}
  R(c,G.CH0,98,G.CH1-G.CH0,60,'#2f86c4');R(c,G.CH1,60,3,98,'#3b2412');R(c,G.CH1+1,60,1,98,'#8fd8f5');R(c,G.CH0+2,150,G.CH1-G.CH0-4,8,'#2b1d10');R(c,G.CH0+4,151,G.CH1-G.CH0-8,6,'#111');
- c.font='7px Galmuri9, monospace';c.fillStyle='#fff6d8';c.fillText('꺼내는 곳',(G.CH0+G.CH1)/2,143);
  c.fillStyle='#3b2412';for(let k=0;k<3;k++){const ay=112+k*8+Math.floor(kt*4)%2;R(c,(G.CH0+G.CH1)/2-1,ay,3,3,'#ffd93d');}
  const live=kd.filter(d=>!d.out&&!(d===kT&&(kCarry||kFall||kS==='drop'))).sort((a,b)=>a.y-b.y);
  c.textAlign='left';
  live.forEach(d=>{const b=Math.sin(kt*4+d.ph)>0?0:1;duck(c,d.x,d.y+b,d.lk,d.vx<0,kt,d.ph);
-  const s=String(d.num),w=s.length*4+3;R(c,d.x+3,d.y-8+b,w,7,'#3b2412');c.fillStyle='#fff6d8';c.font='7px Galmuri9, monospace';c.fillText(s,d.x+4.5,d.y-4+b);});
+  pTag(c,d.x+3,d.y-10+b,d.num);});
  if(kT&&(kCarry||kFall||(kS==='drop'&&!kT.out))){duck(c,kT.x,kT.y,kT.lk,false,kt,null);if(kCarry){const f=Math.floor(kt*8)%2;R(c,kT.x-3,kT.y+2+f,2,1,'#fff');R(c,kT.x+15,kT.y+5-f,2,1,'#fff');}}
  R(c,G.GX0+2,KRAIL-2,G.GX1-G.GX0-4,4,'#3b2412');R(c,G.GX0+2,KRAIL-1,G.GX1-G.GX0-4,2,'#a7a9b0');
  R(c,kx-7,KRAIL-4,14,7,'#3b2412');R(c,kx-6,KRAIL-3,12,5,'#ffd93d');R(c,kx-6,KRAIL-3,12,1,'#fff3a8');
  const hy=KRAIL+3+kL;R(c,kx,KRAIL+3,1,kL,'#3b2412');R(c,kx-5,hy,11,5,'#3b2412');R(c,kx-4,hy+1,9,3,'#c4c8cf');R(c,kx-4,hy+1,9,1,'#fff');
  const a=kOpen;for(const s of [-1,1]){for(let k=0;k<6;k++)R(c,kx+s*(3+a*k*0.7)-(s<0?1:0),hy+5+k,2,1,'#3b2412');R(c,kx+s*(3+a*4.2)-(s<0?2:-1)*(1-a)-(s<0?0:1),hy+11,3,1,'#3b2412');}
  kp.forEach(p=>R(c,p.x,p.y,p.k==='c'?2:1,p.k==='c'?2:1,p.k==='c'?p.c:'#fff'));
- c.globalAlpha=0.3;for(let k=0;k<Math.floor(W/110)+1;k++){for(let i=0;i<40;i++)R(c,70+k*110+i*0.6,40+i*2.5,2,2,'#fff');}c.globalAlpha=1;
+ c.globalAlpha=0.16;for(let k=0;k<Math.floor(W/140)+1;k++){for(let i=0;i<62;i++){const x=80+k*140+i*0.45;R(c,x,32+i,6,1,'#fff');R(c,x+9,32+i,2,1,'#fff');}}c.globalAlpha=1;
  R(c,0,160,W,20,'#b8352a');R(c,0,160,W,2,'#3b2412');R(c,W/2-11,165,22,10,'#3b2412');R(c,W/2-10,166,20,8,'#2b1d10');R(c,W/2-8,168,16,1,'#ffd93d');
  R(c,W-90,163,6,10,'#3b2412');R(c,W-91,161,8,5,'#e5484d');R(c,W-60,166,10,8,'#3b2412');R(c,W-59,167,8,6,'#30a46c');R(c,W-42,166,10,8,'#3b2412');R(c,W-41,167,8,6,'#3e63dd');
  if(kS==='result'&&kT){kbc.clearRect(0,0,30,20);const b=Math.sin(kt*5)>0?0:1;duck(kbc,8,6+b,kT.lk,false,kt,null);const f=Math.floor(kt*6)%2;[[3,4],[25,6],[5,16],[24,15]].forEach((q,j)=>R(kbc,q[0],q[1],1,1,(j+f)%2?'#ffe14d':'#fff'));}}
 function kFit(){if(!kOn)return;const sw=kst.clientWidth||640,other=$('claw').offsetHeight-kst.offsetHeight,avail=Math.max(220,window.innerHeight-other-20);
  const w=Math.max(320,Math.min(640,Math.round(KH*sw/avail)));if(w!==KW){const G0=kg();KW=w;kcv.width=KW;const G=kg();kd.forEach(d=>{d.x=Math.max(G.X0,Math.min(G.X1-13,d.x));});if(kS==='idle'||kS==='result')kx=G.HOME;}
- document.documentElement.style.setProperty('--cu',(sw/KW)+'px');}
+ document.documentElement.style.setProperty('--cu',(sw/KW)+'px');const G2=kg();$('kchute').style.left=((G2.CH0+G2.CH1)/2/KW*100)+'%';}
 window.addEventListener('resize',kFit);document.addEventListener('fullscreenchange',kFit);
 let kLast=performance.now(),kFT=0;
 function kLoop(n){const dt=Math.min(0.05,(n-kLast)/1000);kLast=n;
