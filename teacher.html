@@ -149,6 +149,8 @@ textarea{width:100%;height:170px;font-size:15px;padding:8px;border:3px solid var
 .kbar .btn{font-size:14px;padding:5px 12px;border-width:2px}
 .kbar .kgo{font-size:20px!important;padding:8px 30px!important;background:#ffd93d;border:3px solid var(--br)!important;box-shadow:0 4px 0 var(--br)}
 .kbar .kgo:active{transform:translateY(3px);box-shadow:0 1px 0 var(--br)}
+.kbar .kfast{font-size:16px!important;padding:6px 16px!important;background:#ff9ec7;border:3px solid var(--br)!important;box-shadow:0 3px 0 var(--br)}
+.kbar .kfast:active{transform:translateY(2px);box-shadow:0 1px 0 var(--br)}
 .khist{flex:1;font-size:14px;color:var(--bn);min-width:200px}
 .khist b{display:inline-block;font-weight:400;background:var(--bn);color:var(--cr);padding:1px 6px;margin:2px 3px 2px 0}
 </style>
@@ -221,6 +223,7 @@ textarea{width:100%;height:170px;font-size:15px;padding:8px;border:3px solid var
   </div>
   <div class="kbar">
     <button class="btn kgo" id="kgo">뽑기!</button>
+    <button class="btn kfast" id="kfast">빠른 뽑기</button>
     <button class="btn on" id="kex">뽑힌 오리 빼기</button>
     <button class="btn" id="krs">처음부터</button>
     <div class="khist" id="khist">뽑힌 순서가 여기에 쌓여요.</div>
@@ -779,11 +782,21 @@ function kGo(){initAudio();if(kS!=='idle'&&kS!=='result')return;const G=kg();
  const pool=kd.filter(d=>!d.out);if(!pool.length){kReset();return;}
  kT=pool[Math.floor(Math.random()*pool.length)];kT.vx=0;kMiss=Math.random()<0.2;
  const r=()=>G.X0+20+Math.random()*(G.X1-G.X0-40);kwp=[r(),r(),-1];kS='move';kwait=0;kt0(880,0.08,'square',0.1);kt0(1320,0.1,'square',0.1,0.08);}
+let kFastT=0,kFlash=null,kFlashT=0;
+function kFast(){initAudio();if(kS!=='idle'&&kS!=='result')return;const G=kg();
+ if(kS==='result'){$('kres').classList.add('hidden');if(!kEx){kT.out=false;kT.x=G.X0+Math.random()*(G.X1-G.X0-13);kT.y=104;}}
+ const pool=kd.filter(d=>!d.out);if(!pool.length){kReset();return;}
+ kT=pool[Math.floor(Math.random()*pool.length)];kS='fast';kFastT=0;kFlashT=0;kFlash=null;}
+$('kfast').onclick=kFast;
 $('kgo').onclick=kGo;
-document.addEventListener('keydown',e=>{if(!kOn)return;if(e.code==='Space'||e.code==='Enter'){e.preventDefault();kGo();}});
+document.addEventListener('keydown',e=>{if(!kOn)return;if(e.code==='Space'||e.code==='Enter'){e.preventDefault();kGo();}else if(e.key==='f'||e.key==='F'||e.key==='ㄹ'){kFast();}});
 function kSplash(x,y,n){for(let k=0;k<(n||14);k++)kp.push({k:'w',x:x+Math.random()*8-4,y,vx:(Math.random()-.5)*50,vy:-20-Math.random()*30,l:.7});}
 const kTip=()=>KRAIL+3+kL+10;
 function kStep(dt){kt+=dt;const G=kg(),sp=100;
+ if(kS==='fast'){kFastT+=dt;kFlashT-=dt;const pool=kd.filter(d=>!d.out);
+  if(kFastT<1.1){if(kFlashT<=0){kFlashT=0.05+kFastT*0.09;let n;do{n=pool[Math.floor(Math.random()*pool.length)];}while(pool.length>1&&n===kFlash);kFlash=n;kt0(600+kFastT*500,0.04,'square',0.08);}}
+  else if(kFlash!==kT){kFlash=kT;kt0(1200,0.08,'square',0.12);}
+  else if(kFastT>1.6){kFlash=null;kSplash(kT.x+6,kT.y+8,16);kT.out=true;kWin();}}
  for(let a=0;a<kd.length;a++){const p=kd[a];if(p.out||(p===kT&&kS!=='idle'&&kS!=='result'))continue;for(let b2=a+1;b2<kd.length;b2++){const q=kd[b2];if(q.out||(q===kT&&kS!=='idle'&&kS!=='result'))continue;const dx=q.x-p.x;if(Math.abs(dx)<18&&Math.abs(q.y-p.y)<10){const f=(18-Math.abs(dx))*dt*1.5*(dx>=0?1:-1);p.x-=f;q.x+=f;}}}
  kd.forEach(d=>{if(d.out||(d===kT&&kS!=='idle'&&kS!=='result'))return;d.x+=d.vx*dt;if(d.x<G.X0||d.x>G.X1-13){d.vx*=-1;d.x=Math.max(G.X0,Math.min(G.X1-13,d.x));}if(Math.random()<dt*0.3)d.vx=(Math.random()-0.5)*6;});
  const mv=()=>{kTick+=dt;if(kTick>0.09){kTick=0;kt0(170,0.04,'square',0.05);}};
@@ -811,7 +824,7 @@ function kDraw(){const c=kc,G=kg(),W=KW;
  c.fillStyle='#3b2412';for(let k=0;k<3;k++){const ay=112+k*8+Math.floor(kt*4)%2;R(c,(G.CH0+G.CH1)/2-1,ay,3,3,'#ffd93d');}
  const live=kd.filter(d=>!d.out&&!(d===kT&&(kCarry||kFall||kS==='drop'))).sort((a,b)=>a.y-b.y);
  c.textAlign='left';
- live.forEach(d=>{const b=Math.sin(kt*4+d.ph)>0?0:1;duck(c,d.x,d.y+b,d.lk,d.vx<0,kt,d.ph);
+ live.forEach(d=>{const b=Math.sin(kt*4+d.ph)>0?0:1;if(d===kFlash&&kS==='fast'){R(c,d.x-3,d.y-3+b,19,15,'#3b2412');R(c,d.x-2,d.y-2+b,17,13,'#ffe14d');}duck(c,d.x,d.y+b,d.lk,d.vx<0,kt,d.ph);
   if(!d.tag)pTag(c,d.x+3,d.y-10+b,d.num);});
  if(kT&&(kCarry||kFall||(kS==='drop'&&!kT.out))){duck(c,kT.x,kT.y,kT.lk,false,kt,null);if(kCarry){const f=Math.floor(kt*8)%2;R(c,kT.x-3,kT.y+2+f,2,1,'#fff');R(c,kT.x+15,kT.y+5-f,2,1,'#fff');}}
  R(c,G.GX0+2,KRAIL-2,G.GX1-G.GX0-4,4,'#3b2412');R(c,G.GX0+2,KRAIL-1,G.GX1-G.GX0-4,2,'#a7a9b0');
@@ -823,7 +836,7 @@ function kDraw(){const c=kc,G=kg(),W=KW;
  R(c,0,160,W,20,'#b8352a');R(c,0,160,W,2,'#3b2412');R(c,W/2-11,165,22,10,'#3b2412');R(c,W/2-10,166,20,8,'#2b1d10');R(c,W/2-8,168,16,1,'#ffd93d');
  R(c,W-90,163,6,10,'#3b2412');R(c,W-91,161,8,5,'#e5484d');R(c,W-60,166,10,8,'#3b2412');R(c,W-59,167,8,6,'#30a46c');R(c,W-42,166,10,8,'#3b2412');R(c,W-41,167,8,6,'#3e63dd');
  kd.forEach(d=>{const t=d.tag;if(!t)return;const hide=d.out||(d===kT&&kS==='drop'&&!kCarry);t.style.display=hide?'none':'block';if(hide)return;const b=(d===kT&&(kCarry||kFall))?0:(Math.sin(kt*4+d.ph)>0?0:1);
-  t.style.left=((d.x+6.5)/W*100)+'%';t.style.top=((d.y-2+b)/KH*100)+'%';t.classList.toggle('hot',d===kT&&kCarry);});
+  t.style.left=((d.x+6.5)/W*100)+'%';t.style.top=((d.y-2+b)/KH*100)+'%';t.classList.toggle('hot',(d===kT&&kCarry)||(kS==='fast'&&d===kFlash));});
  if(kS==='result'&&kT){kbc.clearRect(0,0,30,20);const b=Math.sin(kt*5)>0?0:1;duck(kbc,8,6+b,kT.lk,false,kt,null);const f=Math.floor(kt*6)%2;[[3,4],[25,6],[5,16],[24,15]].forEach((q,j)=>R(kbc,q[0],q[1],1,1,(j+f)%2?'#ffe14d':'#fff'));}}
 function kFit(){if(!kOn)return;const sw=kst.clientWidth||640,other=$('claw').offsetHeight-kst.offsetHeight,avail=Math.max(220,window.innerHeight-other-20);
  const w=Math.max(320,Math.min(640,Math.round(KH*sw/avail)));if(w!==KW){const G0=kg();KW=w;kcv.width=KW;const G=kg();kd.forEach(d=>{d.x=Math.max(G.X0,Math.min(G.X1-13,d.x));});if(kS==='idle'||kS==='result')kx=G.HOME;}
