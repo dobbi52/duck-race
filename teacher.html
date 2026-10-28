@@ -83,6 +83,7 @@ textarea{width:100%;height:170px;font-size:15px;padding:8px;border:3px solid var
 .ctl{display:flex;gap:6px;margin-top:8px;align-items:center;flex-wrap:wrap}
 .ctl .btn{font-size:13px;padding:4px 10px;border-width:2px}
 .ctl .sp{flex:1}
+.glen{display:inline-flex;gap:4px}.glen.dis{opacity:.4;pointer-events:none}.gsep{width:2px;height:20px;background:var(--bn);opacity:.35;margin:0 4px}
 .legend{font-size:12px;color:var(--bn)}
 .ab{display:grid;grid-template-columns:repeat(auto-fill,minmax(50px,1fr));gap:6px;margin-bottom:6px}
 .ab button{font-size:15px;padding:7px 2px;border-radius:50% 50% 44% 44%/58% 58% 42% 42%!important;background:#f6c97a;color:var(--br);border:3px solid var(--bn);border-radius:0;cursor:pointer}
@@ -212,8 +213,6 @@ textarea{width:100%;height:170px;font-size:15px;padding:8px;border:3px solid var
       <div class="gbody">
         <div class="gname">오리 레이스</div>
         <div class="gdesc" id="rdesc">강을 달려 우리 반 순서를 정해요. 학생들은 폰으로 들어와 오리를 꾸미고 함께해요.</div>
-        <div class="row"><span class="lb">경주 길이</span><button class="btn lnb" data-l="200">짧게 200m</button><button class="btn lnb" data-l="350">보통 350m</button><button class="btn lnb" data-l="500">길게 500m</button></div>
-          <div class="row"><span class="lb">결과 방식</span><button class="btn mb on" data-m="all">전체 순위</button><button class="btn mb" data-m="first">1등만</button><button class="btn mb" data-m="last">꼴등만</button></div>
           <div class="row"><span class="lb">참여 방식</span><button class="btn pjb" data-p="all">학생도 함께</button><button class="btn pjb" data-p="solo">선생님만</button></div>
         <button class="btn go big" id="mk">방 만들기</button>
       </div>
@@ -280,6 +279,7 @@ textarea{width:100%;height:170px;font-size:15px;padding:8px;border:3px solid var
     <div class="panel">
       <div class="rk" id="rk"></div>
       <div class="ctl">
+        <span class="glen" id="glen"><button class="btn lnb" data-l="200">200m</button><button class="btn lnb" data-l="350">350m</button><button class="btn lnb" data-l="500">500m</button></span><span class="gsep"></span>
         <button class="btn gb" data-m="all">전체 순위</button><button class="btn gb" data-m="first">1등만</button><button class="btn gb" data-m="last">꼴등만</button>
         <span class="legend" id="legend"></span><span class="sp"></span>
         <button class="btn go" id="bStart">출발!</button>
@@ -423,7 +423,8 @@ function geom(){WW=SX+LEN*PXM+70;FX=WW-50;EX=FX-13;ZX=ZF.map(f=>Math.round(SX+f*
 geom();
 let SOLO=lsGet('duckrace_join')==='solo';
 function setJoin(v){SOLO=v==='solo';lsSet('duckrace_join',v);document.querySelectorAll('.pjb').forEach(b=>b.classList.toggle('on',b.dataset.p===v));if(!DEMO)$('mk').textContent=SOLO?'경기 준비':'방 만들기';$('rdesc').textContent=SOLO?'강을 달려 우리 반 순서를 정해요. 학생 접속 없이 선생님 화면에서만 진행해요.':'강을 달려 우리 반 순서를 정해요. 학생들은 폰으로 들어와 오리를 꾸미고 함께해요.';}
-function setLen(l){LEN=l;lsSet('duckrace_len',l);document.querySelectorAll('.lnb').forEach(b=>b.classList.toggle('on',+b.dataset.l===l));}
+function setLen(l){if(phase!=='setup'&&phase!=='lobby'&&phase!=='done')return;const ch=l!==LEN;LEN=l;lsSet('duckrace_len',l);document.querySelectorAll('.lnb').forEach(b=>b.classList.toggle('on',+b.dataset.l===l));
+ if(ch&&(phase==='lobby'||phase==='done')&&names.length){if(phase==='done')again();geom();drawBG();resetRace();cam=0;if(roomRef)roomRef.update({len:LEN}).catch(()=>{});sfx('blip');}}
 document.querySelectorAll('.lnb').forEach(b=>b.onclick=()=>setLen(+b.dataset.l));setLen(LEN);
 document.querySelectorAll('.pjb').forEach(b=>b.onclick=()=>setJoin(b.dataset.p));
 const cv=$('cv'),cx=cv.getContext('2d'),st=$('stage'),mm=$('mm'),mx=mm.getContext('2d');
@@ -792,7 +793,7 @@ function showResult(){const o=resultOrder.map(i=>names[i]);let h,b;
  $('result').classList.toggle('wide',mode==='all');$('rtitle').textContent=h;$('rbody').innerHTML=b;
  $('rbody').querySelectorAll('canvas[data-i]').forEach(cv2=>{const i=+cv2.dataset.i,ctx=cv2.getContext('2d');duck(ctx,8,cv2.height===20?7:6,looks[i]||defLook(i),false,0,null);if(cv2.height===20){[[3,4],[25,6],[5,16],[24,15]].forEach(q=>R(ctx,q[0],q[1],1,1,'#ffe14d'));}});
  $('result').classList.remove('hidden');const qq=$('rbody').querySelector('.q');if(qq)setTimeout(()=>qq.classList.add('shown'),2600);}
-function updPanel(){$('bStart').classList.toggle('hidden',phase!=='lobby');$('bAgain').classList.toggle('hidden',phase!=='done');}
+function updPanel(){$('glen').classList.toggle('dis',phase!=='lobby'&&phase!=='done');$('bStart').classList.toggle('hidden',phase!=='lobby');$('bAgain').classList.toggle('hidden',phase!=='done');}
 
 function stCode(o){if(o.fin)return 0;if(o.s)return SC[o.s]||0;if(inCloud(o))return 14;if(rainbowEnd>t)return 15;return 0;}
 function pushState(){if(!roomRef)return;const rd=x=>Math.round(x*1000)/1000,r2=x=>Math.round(x*100)/100;
