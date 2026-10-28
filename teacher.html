@@ -81,6 +81,15 @@ textarea{width:100%;height:170px;font-size:15px;padding:8px;border:3px solid var
 .ab button.skip{opacity:.35}
 .abm{font-size:13px!important;padding:4px 10px!important;border-width:2px!important}
 .chip.stat{font-size:12px;padding:3px 8px;opacity:.85}
+#qr{cursor:zoom-in}
+#lobby .url{cursor:copy;text-decoration:underline dotted}
+#qrBig{position:absolute;inset:0;background:rgba(20,12,4,.7);display:flex;align-items:center;justify-content:center;z-index:9;cursor:zoom-out}
+#qrBig.hidden{display:none!important}
+.qbcard{background:var(--cr);border:calc(var(--u)*1.5) solid var(--br);padding:calc(var(--u)*5) calc(var(--u)*8);text-align:center}
+.qbt{font-size:calc(var(--u)*5.5);color:var(--bn)}
+#qrBigImg{background:#fff;padding:calc(var(--u)*3);margin:calc(var(--u)*3) auto;display:inline-block}
+#qrBigImg img,#qrBigImg canvas{display:block;width:calc(var(--u)*120)!important;height:calc(var(--u)*120)!important;image-rendering:pixelated}
+.qbcode{font-size:calc(var(--u)*14);letter-spacing:.12em;color:var(--br);line-height:1.1;margin-bottom:calc(var(--u)*2)}
 .cnum{font-size:24px;min-width:72px;text-align:center}
 #setup{max-width:1200px;margin:18px auto;padding:0 16px 24px}
 .hero{position:relative;border:4px solid var(--gd);margin-bottom:14px;background:#3c9fdc}
@@ -224,6 +233,7 @@ textarea{width:100%;height:170px;font-size:15px;padding:8px;border:3px solid var
         <div class="paper"><span class="pin"></span><div id="qr"></div><div class="url" id="lurl"></div></div>
         <div class="cnt" id="lcnt">접속 0 · 준비 0</div>
       </div>
+      <div id="qrBig" class="hidden"><div class="qbcard"><div class="qbt">폰이나 크롬북 카메라로 찍어요</div><div id="qrBigImg"></div><div class="qbcode" id="qbcode"></div><div class="qbt">아무 곳이나 누르면 닫혀요</div></div></div>
       <div id="result" class="hidden"><h2 id="rtitle"></h2><div id="rbody"></div></div>
     </div>
     <div id="cast"><span id="castT">출발을 기다리고 있어요</span></div>
@@ -591,10 +601,16 @@ function pushState(){if(!roomRef)return;const rd=x=>Math.round(x*1000)/1000,r2=x
   h:hLog.splice(0)};if(lastK)s.k=lastK;
  roomRef.child('state').set(s).catch(()=>{});}
 
+let roomUrl='';
+function copyText(tx){if(navigator.clipboard&&window.isSecureContext)return navigator.clipboard.writeText(tx);return new Promise((ok,no)=>{const a=document.createElement('textarea');a.value=tx;a.style.position='fixed';a.style.opacity='0';document.body.appendChild(a);a.select();try{document.execCommand('copy')?ok():no();}catch(e){no(e);}a.remove();});}
+$('qr').onclick=e=>{e.stopPropagation();$('qrBig').classList.remove('hidden');};
+$('qrBig').onclick=()=>$('qrBig').classList.add('hidden');
+$('lurl').onclick=()=>{if(!roomUrl)return;const el=$('lurl'),old=roomUrl.replace(/^https?:\/\//,'');copyText(roomUrl).then(()=>{el.textContent='주소를 복사했어요!';},()=>{el.textContent='복사하지 못했어요. 직접 선택해 주세요';}).finally(()=>setTimeout(()=>{el.textContent=old;},1500));};
 function showGame(){setBgm('lobby');$('setup').classList.add('hidden');$('game').classList.remove('hidden');
  $('gcls').textContent=clsName;$('gcode').textContent=code;$('lcode').textContent=code;
  const base=location.href.split('?')[0].replace(/[^/]*$/,''),url=base+'?room='+code;
- $('lurl').textContent=url.replace(/^https?:\/\//,'');$('qr').innerHTML='';
+ roomUrl=url;$('lurl').textContent=url.replace(/^https?:\/\//,'');$('lurl').title='누르면 주소가 복사돼요';$('qr').innerHTML='';$('qrBigImg').innerHTML='';$('qbcode').textContent=code;$('qrBig').classList.add('hidden');
+ try{new QRCode($('qrBigImg'),{text:url,width:512,height:512,correctLevel:QRCode.CorrectLevel.M});}catch(e){}
  try{new QRCode($('qr'),{text:url,width:256,height:256,correctLevel:QRCode.CorrectLevel.M});}catch(e){}
  document.querySelectorAll('#stage .tg,#stage .bb').forEach(e=>e.remove());tags=[];bbs=[];
  names.forEach((n,i)=>{const a=document.createElement('div');a.className='tg';a.textContent=nums[i]||i+1;st.appendChild(a);tags.push(a);const b=document.createElement('div');b.className='bb';st.appendChild(b);bbs.push(b);});
@@ -609,7 +625,6 @@ function frogAt(c,x,y){R(c,x,y,6,4,'#3b2412');R(c,x+1,y+1,4,2,'#5fd35f');R(c,x+1
 function scene(){const c=Math.round(cam);cx.drawImage(bg,c,0,W,H,0,0,W,H);
  for(let k=0;k<Math.floor(WW/5);k++){const x=((k*41+t*(8+k%4*3))%(WW-14))+14-c;if(x<-4||x>W)continue;const y=31+((k*29)%148);R(cx,x,y,k%3?3:2,1,'#7fcdf2');if(k%5===0)R(cx,x+1,y+1,2,1,'#2f86c4');}
  const wfx=WFX-c;if(wfx>-12&&wfx<W+4){for(let k=0;k<26;k++){const y=28+((k*23+t*70)%150);R(cx,wfx+((k*3)%6),y,1,4,'#ffffff');}for(let k=0;k<10;k++){R(cx,wfx+7+((k*5+t*30)%10),30+((k*37)%148),2,1,'#ffffff');}}
- const bx=BX-c;if(bx>-30&&bx<W+10)R(cx,bx-3,28,24,156,'rgba(20,60,90,0.25)');
  for(let x=ZX[1]+6;x<ZX[2]-42;x+=46){const sx=x-c;if(sx<-46||sx>W)continue;for(let k=0;k<5;k++){const hx=(t*14+k*9+x)%34;R(cx,sx+1+hx,3+k*2,4,1,'#f7e08a');}}
  for(let x=ZX[3];x<ZX[4];x+=6){const sx=x-c;if(sx<-6||sx>W)continue;const sw=Math.round(Math.sin(t*1.8+x*0.05)*1.5);R(cx,sx+sw,0,3,3,'#3b2412');R(cx,sx+1+sw,0,1,3,'#7fd65e');R(cx,sx-2+sw,(x*3)%16,3,1,'#6cc24a');R(cx,sx+2+sw,(x*5)%14+2,3,1,'#4caf50');}
  for(let x=ZX[5];x<WW;x+=8){const sx=x-c;if(sx<-6||sx>W)continue;R(cx,sx,3+(Math.floor(t*4+x/8)%2),5,4,PC[(x/8|0)%6]);}
@@ -650,7 +665,6 @@ function scene(){const c=Math.round(cam);cx.drawImage(bg,c,0,W,H,0,0,W,H);
   tg.style.background=phase==='lobby'?(lk.ready?'#2e8b1f':(claims[o.i]?'#3b2412':'#8a7a60')):'#3b2412';
   tg.style.left=(x/W*100)+'%';tg.style.top=((y+5)/H*100)+'%';bb.style.left=((x+4)/W*100)+'%';bb.style.top=(y/H*100)+'%';});
  for(const q of parts){const sx=q.x-c;if(sx<-3||sx>W)continue;if(q.k==='leaf')R(cx,sx,q.y,2,1,q.c);else if(q.k==='conf')R(cx,sx,q.y,1,2,q.c);else R(cx,sx,q.y,1,1,q.c);}
- if(bx>-30&&bx<W+10){R(cx,bx,24,18,164,'#3b2412');R(cx,bx+1,25,16,162,'#b07a3c');for(let y=27;y<186;y+=4)R(cx,bx+1,y,16,1,'#8a5a2b');R(cx,bx-1,24,2,164,'#7a4a21');R(cx,bx+17,24,2,164,'#7a4a21');for(let y=30;y<186;y+=12){R(cx,bx-2,y,4,3,'#3b2412');R(cx,bx+16,y,4,3,'#3b2412');}}
  if(cloud){const ccx=cloud.x-c;if(ccx>-cloud.w&&ccx<W+cloud.w){for(let k=0;k<7;k++){const px=ccx-cloud.w/2+8+k*(cloud.w-16)/6,py=30+(k%2)*3;disc(cx,Math.round(px),Math.round(py),9,'#3b2412');disc(cx,Math.round(px),Math.round(py),8,k%2?'#7d8796':'#8f99a8');}}}
  if(rainbowEnd>t){const a=Math.min(1,(rainbowEnd-t)/0.8,(t-(rainbowEnd-3.5))/0.5);cx.globalAlpha=Math.max(0,a)*0.7;['#e5484d','#f76b15','#ffd93d','#30a46c','#3e63dd','#8e4ec6'].forEach((col,k)=>{const r=W*0.48-k*4;for(let s=0;s<=60;s++){const an=Math.PI+s/60*Math.PI;R(cx,W/2+Math.cos(an)*r,210+Math.sin(an)*(r*0.95),3,3,col);}});cx.globalAlpha=1;}
  if(eagle){const pr=(t-eagle.st)/(eagle.end-eagle.st),ex=-60+pr*(W+120),ey=60+Math.sin(pr*6)*10,fl=Math.floor(t*6)%2;cx.globalAlpha=0.35;R(cx,ex,ey,30,5,'#14202c');R(cx,ex+8,ey-6+(fl?2:0),14,6,'#14202c');R(cx,ex+8,ey+5-(fl?2:0),14,6,'#14202c');R(cx,ex+30,ey+1,6,3,'#14202c');cx.globalAlpha=1;}
