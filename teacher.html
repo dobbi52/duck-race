@@ -211,9 +211,10 @@ textarea{width:100%;height:170px;font-size:15px;padding:8px;border:3px solid var
       <canvas id="pvRace" width="240" height="50"></canvas>
       <div class="gbody">
         <div class="gname">오리 레이스</div>
-        <div class="gdesc">강을 달려 우리 반 순서를 정해요. 학생들은 폰으로 들어와 오리를 꾸미고 응원해요.</div>
+        <div class="gdesc" id="rdesc">강을 달려 우리 반 순서를 정해요. 학생들은 폰으로 들어와 오리를 꾸미고 함께해요.</div>
         <div class="row"><span class="lb">경주 길이</span><button class="btn lnb" data-l="200">짧게 200m</button><button class="btn lnb" data-l="350">보통 350m</button><button class="btn lnb" data-l="500">길게 500m</button></div>
           <div class="row"><span class="lb">결과 방식</span><button class="btn mb on" data-m="all">전체 순위</button><button class="btn mb" data-m="first">1등만</button><button class="btn mb" data-m="last">꼴등만</button></div>
+          <div class="row"><span class="lb">참여 방식</span><button class="btn pjb" data-p="all">학생도 함께</button><button class="btn pjb" data-p="solo">선생님만</button></div>
         <button class="btn go big" id="mk">방 만들기</button>
       </div>
     </div>
@@ -254,7 +255,7 @@ textarea{width:100%;height:170px;font-size:15px;padding:8px;border:3px solid var
 <div id="game" class="hidden">
   <div class="wrap">
     <div class="top">
-      <span class="chip g" id="gcls">우리 반</span><span class="chip g">방 <span id="gcode">----</span></span>
+      <span class="chip g" id="gcls">우리 반</span><span class="chip g" id="gcodeC">방 <span id="gcode">----</span></span>
       <span class="chip" id="lead">선두: -</span><span class="chip" id="prog">0m</span>
       <span style="flex:1"></span><span class="chip stat" id="gstat"></span><button class="btn" id="snd">소리 켬</button><span class="chip" style="font-size:13px;padding:2px 8px">배경음 <input type="range" id="vol" min="0" max="1" step="0.05" style="width:80px;vertical-align:middle"></span><button class="btn" id="fs">전체 화면</button>
     </div>
@@ -420,8 +421,11 @@ if([200,350,500].indexOf(LEN)<0)LEN=350;
 const ZNAMES=['단풍 마을','황금 논밭','연꽃 호수','대나무 숲','폭포 계곡','강변 축제'],ZF=[0,.16,.32,.5,.66,.84],ZCOL=['#e4c27c','#e8c547','#f4b6c8','#8fd06a','#a9b6c2','#f2a0a0'];
 function geom(){WW=SX+LEN*PXM+70;FX=WW-50;EX=FX-13;ZX=ZF.map(f=>Math.round(SX+f*(EX-SX)));ZX.push(WW);BX=Math.round(ZX[1]+(ZX[2]-ZX[1])*0.62);WFX=ZX[4]+40;}
 geom();
+let SOLO=lsGet('duckrace_join')==='solo';
+function setJoin(v){SOLO=v==='solo';lsSet('duckrace_join',v);document.querySelectorAll('.pjb').forEach(b=>b.classList.toggle('on',b.dataset.p===v));if(!DEMO)$('mk').textContent=SOLO?'경기 준비':'방 만들기';$('rdesc').textContent=SOLO?'강을 달려 우리 반 순서를 정해요. 학생 접속 없이 선생님 화면에서만 진행해요.':'강을 달려 우리 반 순서를 정해요. 학생들은 폰으로 들어와 오리를 꾸미고 함께해요.';}
 function setLen(l){LEN=l;lsSet('duckrace_len',l);document.querySelectorAll('.lnb').forEach(b=>b.classList.toggle('on',+b.dataset.l===l));}
 document.querySelectorAll('.lnb').forEach(b=>b.onclick=()=>setLen(+b.dataset.l));setLen(LEN);
+document.querySelectorAll('.pjb').forEach(b=>b.onclick=()=>setJoin(b.dataset.p));
 const cv=$('cv'),cx=cv.getContext('2d'),st=$('stage'),mm=$('mm'),mx=mm.getContext('2d');
 const bg=document.createElement('canvas');bg.width=WW;bg.height=H;const g=bg.getContext('2d');
 function R(c,x,y,w,h,col){c.fillStyle=col;c.fillRect(Math.round(x),Math.round(y),w,h);}
@@ -612,10 +616,15 @@ function heart(c,x,y){const s=[".k.k.","kRkRk","kRRRk",".kRk.","..k.."];s.forEac
 /* ---------- 방 ---------- */
 function roomData(){const o={host:uid,createdAt:Date.now(),status:phase==='done'?'done':(phase==='race'||phase==='count')?'racing':'lobby',mode,looks:looks,claims:claims,nums:nums,len:LEN};if(phase!=='done')o.names=names;else o.result=resultOrder;return o;}
 $('mk').onclick=makeRoom;
+setTimeout(()=>setJoin(SOLO?'solo':'all'),0);
 const DEMO=new URLSearchParams(location.search).has('demo');
 if(DEMO){$('mk').textContent='연습 시작';if(!parseNames().length)$('names').value=['김하늘','이도윤','박서연','최민준','정유진','한지호','윤서아','강하준','조예린','임시우','오지안','신도현','권나윤','황준서','송다은','류건우','배수아','전하람','고은찬','문채원','서지후','안소율','홍태윤','노아린','백승민'].join('\n');cnt();err('연습 모드예요. 서버 없이 화면만 미리 볼 수 있어요.');}
 async function makeRoom(){
  if(DEMO){const sl=buildList();if(sl.length<2)return err(gFilter!=='all'?'참가하는 친구가 두 명 이상이어야 해요. 남녀 정하기를 확인해 주세요':'두 명 이상 참가해야 해요');clsName=(pickMode==='num'?'번호 뽑기':($('cname').value.trim()||'우리 반'))+' (연습)';geom();drawBG();names=sl.map(x=>x.n);nums=sl.map(x=>x.num);N=names.length;looks=names.map((n,i)=>defLook(nums[i]-1));claims={};code='연습';roomRef=null;resetRace();phase='lobby';showGame();return;}
+ if(SOLO&&!DEMO){const sl=buildList();if(sl.length<2)return err(gFilter!=='all'?'참가하는 친구가 두 명 이상이어야 해요. 남녀 정하기를 확인해 주세요':'두 명 이상 참가해야 해요');if(sl.length>40)return err('40명까지 할 수 있어요');
+  if(pickMode==='num'){clsName='번호 뽑기';if(!classes[clsName])classes[clsName]={names:[],looks:{}};}else{clsName=$('cname').value.trim()||'우리 반';const prev=classes[clsName]||{};classes[clsName]={names:parseNames(),looks:prev.looks||{},gender:prev.gender||{}};fillSel(clsName);lsSet('duckrace_lastclass',clsName);}
+  saveClasses();geom();drawBG();names=sl.map(x=>x.n);nums=sl.map(x=>x.num);N=names.length;looks=names.map((n,i)=>{const s=classes[clsName].looks[n];const d0=defLook(nums[i]-1);return {pal:s?s.pal:d0.pal,acc:s?s.acc:d0.acc,ready:false};});
+  claims={};code=null;roomRef=null;err('');resetRace();phase='lobby';showGame();return;}
  if(!uid)return err('서버에 연결하는 중이에요. 잠시 뒤 다시 눌러 주세요.');
  const sl=buildList();if(sl.length<2)return err(gFilter!=='all'?'참가하는 친구가 두 명 이상이어야 해요. 남녀 정하기를 확인해 주세요':'두 명 이상 참가해야 해요');if(sl.length>40)return err('40명까지 할 수 있어요');
  if(pickMode==='num'){clsName='번호 뽑기';if(!classes[clsName])classes[clsName]={names:[],looks:{}};}
@@ -683,7 +692,7 @@ const laneY=i=>Y0+i*LH,wx=o=>SX+o.p*(EX-SX),KS=()=>200/LEN;
 function layout(){LH=N>1?Math.min(12,(BY1-BY0)/(N-1)):0;Y0=BY0+((BY1-BY0)-(N-1)*LH)/2;}
 function resetRace(){layout();d=names.map((n,i)=>({n,i,p:0,s:null,u:0,st:0,dur:1,fin:false,r:0,ph:Math.random()*9,sp:0.92+Math.random()*0.16,cheer:0,heart:0,y:laneY(i),ty:laneY(i),ny:2+Math.random()*3,scat:0,wf:false,lead:null,tk:0}));
  t=0;nextEv=1.5;nextG=7+Math.random()*3;lastG='';twist=false;parts=[];fwEnd=0;fc=0;cam=0;zi=0;breads=[];hLog=[];lastK=null;resultOrder=[];cloud=null;rainbowEnd=0;eagle=null;wfSaid=false;qt=null;nextQ=8+Math.random()*3;qCnt=0;qFox=false;qLast=null;qResEnd=0;$('qt').className='';d.forEach(setTag);cur={y:(BY0+BY1)/2+5,ty:(BY0+BY1)/2+5,nt:6};spots=[];nextSpot=9;
- $('zone').textContent=ZNAMES[0];$('result').classList.add('hidden');msg.style.display='none';$('castT').textContent='출발을 기다리고 있어요';bbs.forEach(b=>b.style.display='none');}
+ $('zone').textContent=ZNAMES[0];$('result').classList.add('hidden');msg.style.display='none';$('castT').textContent=SOLO&&!DEMO?'출발! 버튼을 누르면 경기가 시작돼요':'출발을 기다리고 있어요';bbs.forEach(b=>b.style.display='none');}
 const msg=$('msg');
 function say(m,k){msg.classList.remove('cd');msg.style.display='none';clearTimeout(msg._t);const c=$('cast');$('castT').textContent=m;c.classList.remove('flash');if(k){void c.offsetWidth;c.classList.add('flash');}}
 const ITEMS=[['boost','🚀','부스터'],['shield','🛡️','방패'],['luck','🍀','행운'],['turtle','🐢','거북 친구']];
@@ -746,7 +755,7 @@ function step(dt){t+=dt;const ks=KS(),gp=15/(EX-SX);
   if(!o.s){if(zoneAt(wx(o)+6)===2&&Math.random()<0.4){if(setS(o,'frog',1.1,'깜짝!')){sfx('frog');say(o.n+' 오리 머리 위로 개구리가 폴짝!');}}
    else{let e=EV[Math.floor(Math.random()*EV.length)];if(e[0]==='train'&&Math.random()<0.5)e=EV[Math.floor(Math.random()*8)];fire(o,e);}}}
  if(t>nextG&&live.length>2){nextG=t+8+Math.random()*5;groupEvent(live);}
- if(!qt&&t>nextQ&&live.length>1&&Math.max(...live.map(o=>o.p))<0.9){const fox=qCnt>0&&!qFox&&Math.random()<0.35;qFox=fox;qCnt++;startQ(fox?'fox':'gold');}
+ if(!SOLO&&!qt&&t>nextQ&&live.length>1&&Math.max(...live.map(o=>o.p))<0.9){const fox=qCnt>0&&!qFox&&Math.random()<0.35;qFox=fox;qCnt++;startQ(fox?'fox':'gold');}
  if(qt){if(DEMO&&qt.kind==='fox')live.forEach(o=>{if(claims[o.i]==='demo'&&!qt.bad.has(o.i)&&Math.random()<dt*0.12)qPress(o);});if(t>qt.end)endQ();}
  if(fc===N)finish();}
 let qt=null,nextQ=8,qCnt=0,qFox=false,qid=0,qLast=null,qResEnd=0;
@@ -766,7 +775,7 @@ function bump(k){try{if(uid)db.ref('stats/'+k).set(firebase.database.ServerValue
 let STATS={};function showStats(){const f=n=>(n||0).toLocaleString('ko-KR');const a=$('gstat'),b=$('kstat');if(a)a.textContent='전체 레이스 '+f(STATS.race)+'회';if(b)b.textContent='전체 뽑기 '+f(STATS.claw)+'회';}
 try{db.ref('stats').on('value',s=>{STATS=s.val()||{};showStats();},()=>{});}catch(e){}
 function start(){if(phase!=='lobby')return;if(!DEMO)bump('race');resetRace();
- d.forEach(o=>{const l=looks[o.i]||{};const k=claims[o.i]&&l.item!=null?l.item:Math.floor(Math.random()*ITEMS.length);o.item=ITEMS[k][0];o.ik=k;o.iu=0;o.ba=0.3+Math.random()*0.4;setTag(o);});setBgm(null);lastRem=0;phase='count';cdEnd=performance.now()+3000;
+ if(!SOLO)d.forEach(o=>{const l=looks[o.i]||{};const k=claims[o.i]&&l.item!=null?l.item:Math.floor(Math.random()*ITEMS.length);o.item=ITEMS[k][0];o.ik=k;o.iu=0;o.ba=0.3+Math.random()*0.4;setTag(o);});setBgm(null);lastRem=0;phase='count';cdEnd=performance.now()+3000;
  if(roomRef)roomRef.update({status:'racing',startAt:Date.now(),state:null,result:null,len:LEN}).catch(()=>{});
  $('lobby').classList.add('hidden');updPanel();}
 function finish(){phase='done';setTimeout(()=>{if(phase==='done')setBgm('lobby');},3500);resultOrder=d.slice().sort((a,b)=>a.r-b.r).map(o=>o.i);pushState();
@@ -800,11 +809,11 @@ $('qr').onclick=e=>{e.stopPropagation();$('qrBig').classList.remove('hidden');};
 $('qrBig').onclick=()=>$('qrBig').classList.add('hidden');
 $('lurl').onclick=()=>{if(!roomUrl)return;const el=$('lurl'),old=roomUrl.replace(/^https?:\/\//,'');copyText(roomUrl).then(()=>{el.textContent='주소를 복사했어요!';},()=>{el.textContent='복사하지 못했어요. 직접 선택해 주세요';}).finally(()=>setTimeout(()=>{el.textContent=old;},1500));};
 function showGame(){setBgm('lobby');$('setup').classList.add('hidden');$('game').classList.remove('hidden');
- $('gcls').textContent=clsName;$('gcode').textContent=code;$('lcode').textContent=code;
+ $('gcls').textContent=clsName;if(SOLO&&!DEMO)$('gcodeC').textContent='선생님 진행';else $('gcodeC').innerHTML='방 <span id="gcode">'+esc(code)+'</span>';$('lcode').textContent=code||'';$('lobby').style.visibility=SOLO&&!DEMO?'hidden':'';
  const base=location.href.split('?')[0].replace(/[^/]*$/,''),url=base+'?room='+code;
  roomUrl=url;$('lurl').textContent=url.replace(/^https?:\/\//,'');$('lurl').title='누르면 주소가 복사돼요';$('qr').innerHTML='';$('qrBigImg').innerHTML='';$('qbcode').textContent=code;$('qrBig').classList.add('hidden');
- try{new QRCode($('qrBigImg'),{text:url,width:512,height:512,correctLevel:QRCode.CorrectLevel.M});}catch(e){}
- try{new QRCode($('qr'),{text:url,width:256,height:256,correctLevel:QRCode.CorrectLevel.M});}catch(e){}
+ if(!(SOLO&&!DEMO))try{new QRCode($('qrBigImg'),{text:url,width:512,height:512,correctLevel:QRCode.CorrectLevel.M});}catch(e){}
+ if(!(SOLO&&!DEMO))try{new QRCode($('qr'),{text:url,width:256,height:256,correctLevel:QRCode.CorrectLevel.M});}catch(e){}
  document.querySelectorAll('#stage .tg,#stage .bb').forEach(e=>e.remove());tags=[];bbs=[];
  names.forEach((n,i)=>{const a=document.createElement('div');a.className='tg';a.textContent=nums[i]||i+1;st.appendChild(a);tags.push(a);const b=document.createElement('div');b.className='bb';st.appendChild(b);bbs.push(b);});
  $('lobby').classList.remove('hidden');updPanel();fit();}
@@ -878,7 +887,7 @@ function scene(){const c=Math.round(cam);cx.drawImage(bg,c,0,W,H,0,0,W,H);
   if(o.s==='balloon'){R(cx,x+6,y-12,1,12,'#3b2412');R(cx,x+3,y-20,7,8,'#3b2412');R(cx,x+4,y-19,5,6,'#e5484d');R(cx,x+5,y-18,1,2,'#ff9aa0');}
   if(o.s==='train'&&!o.lead){const f=Math.floor(t*6)%3;R(cx,x+8,y-5-f,3,2,'#ffffff');R(cx,x+10,y-8-f,2,2,'#e2e2e2');}
   if(o.s==='train'&&o.lead){const lx2=wx(o.lead)-c;for(let k=x+14;k<lx2-1;k+=3)R(cx,k,y+6,1,1,'#3b2412');}
-  const ghost=phase==='lobby'&&!claims[o.i];if(ghost)cx.globalAlpha=0.35;
+  const ghost=phase==='lobby'&&!claims[o.i]&&!SOLO;if(ghost)cx.globalAlpha=0.35;
   duck(cx,x,y,lk,flip,t,al<-2||o.s==='swan'?null:o.ph);cx.globalAlpha=1;
   if(o.s==='banana'){R(cx,x-6,y+8,5,2,'#3b2412');R(cx,x-5,y+8,3,1,'#ffe14d');}
   if(o.s==='scared'||o.s==='stun'){R(cx,x+6,y-9,2,5,'#e5484d');R(cx,x+6,y-3,2,2,'#e5484d');}
@@ -892,7 +901,7 @@ function scene(){const c=Math.round(cam);cx.drawImage(bg,c,0,W,H,0,0,W,H);
   if(o.heart>t){heart(cx,x+4,y-7-Math.round((1.3-(o.heart-t))*4));}
   if(o.quackHide&&t>o.quackHide){o.quackHide=0;if(!o.s)bb.style.display='none';}
   if(o.fin&&o.r<=3){const mc=['#ffd400','#d0d2d8','#d08a3a'][o.r-1];R(cx,x+3,y-3,3,3,'#3b2412');R(cx,x+4,y-2,1,1,mc);}
-  tg.style.background=phase==='lobby'?(lk.ready?'#2e8b1f':(claims[o.i]?'#3b2412':'#8a7a60')):'#3b2412';
+  tg.style.background=phase==='lobby'&&!SOLO?(lk.ready?'#2e8b1f':(claims[o.i]?'#3b2412':'#8a7a60')):'#3b2412';
   tg.style.left=(x/W*100)+'%';tg.style.top=((y+5)/H*100)+'%';bb.style.left=((x+4)/W*100)+'%';bb.style.top=(y/H*100)+'%';});
  for(const q of parts){const sx=q.x-c;if(sx<-3||sx>W)continue;if(q.k==='leaf')R(cx,sx,q.y,2,1,q.c);else if(q.k==='conf')R(cx,sx,q.y,1,2,q.c);else R(cx,sx,q.y,1,1,q.c);}
  if(cloud){const ccx=cloud.x-c;if(ccx>-cloud.w&&ccx<W+cloud.w){for(let k=0;k<(cloud.half?0:7);k++){const px=ccx-cloud.w/2+8+k*(cloud.w-16)/6,py=(cloud.half?MIDY-3:30)+(k%2)*2,rr=cloud.half?6:8;cx.globalAlpha=cloud.half?0.7:1;disc(cx,Math.round(px),Math.round(py),rr+1,'#3b2412');disc(cx,Math.round(px),Math.round(py),rr,k%2?'#7d8796':'#8f99a8');cx.globalAlpha=1;}}}
@@ -907,7 +916,7 @@ function scene(){const c=Math.round(cam);cx.drawImage(bg,c,0,W,H,0,0,W,H);
  mx.fillStyle='#3b2412';mx.fillRect(Math.round(4+FX/WW*312),2,1,14);}
 
 function panel(){
- if(phase==='lobby'){let on=0,rd=0;$('rk').innerHTML=names.map((n,i)=>{const c=!!claims[i],r=c&&looks[i]&&looks[i].ready;if(c)on++;if(r)rd++;return '<span class="'+(r?'rd':c?'':'off')+'"><b>'+(nums[i]||i+1)+'</b>'+esc(pickMode==='num'&&/^\d+번$/.test(n)?'':n)+'</span>';}).join('');
+ if(phase==='lobby'){let on=0,rd=0;$('rk').innerHTML=names.map((n,i)=>{const c=!!claims[i],r=c&&looks[i]&&looks[i].ready;if(c)on++;if(r)rd++;return '<span class="'+(SOLO?'':r?'rd':c?'':'off')+'"><b>'+(nums[i]||i+1)+'</b>'+esc(pickMode==='num'&&/^\d+번$/.test(n)?'':n)+'</span>';}).join('');
   $('lcnt').textContent='접속 '+on+' · 준비 '+rd+' / '+N;$('lead').textContent='대기 중';$('prog').textContent='0m / '+LEN+'m';return;}
  const o=d.slice().sort((a,b)=>a.fin&&b.fin?a.r-b.r:a.fin?-1:b.fin?1:b.p-a.p);
  $('rk').innerHTML=o.map((x,i)=>'<span class="'+(x.fin?'f':'')+'"><b>'+(i+1)+'</b>'+esc(x.n)+'</span>').join('');
