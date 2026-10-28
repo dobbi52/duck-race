@@ -139,6 +139,17 @@ function sfx(n){if(!AC||!soundOn)return;const T=AC.currentTime;if(sfxLast[n]&&T-
  case 'goal':tone(1046,0.15,'square',0.18,T);tone(784,0.3,'square',0.18,T+0.15);break;
  case 'goal2':tone(880,0.08,'triangle',0.15,T);break;
  case 'boom':noise(0.6,0.4,T,600,120,null,'lowpass');for(let k=0;k<5;k++)noise(0.04,0.12,T+0.15+k*0.07+Math.random()*0.05,4000);break;
+ case 'balloon':tone(500,0.35,'triangle',0.18,T,1100);tone(1200,0.06,'square',0.08,T+0.35);break;
+ case 'hook':for(let k=0;k<5;k++)tone(900,0.03,'square',0.08,T+k*0.06);tone(700,0.15,'sine',0.3,T+0.4,180);break;
+ case 'banana':tone(1200,0.45,'sine',0.18,T,300);break;
+ case 'train':for(let k=0;k<4;k++)noise(0.08,0.18,T+k*0.14,500,null,null,'lowpass');tone(880,0.25,'square',0.08,T+0.6);tone(740,0.25,'square',0.08,T+0.6);break;
+ case 'swan':tone(420,0.12,'square',0.14,T,380);tone(420,0.16,'square',0.14,T+0.16,360);break;
+ case 'rain':noise(1.6,0.12,T,3000,1500,null,'highpass');break;
+ case 'rainbow':[784,988,1175,1568,1976].forEach((f,k)=>tone(f,0.12,'triangle',0.14,T+k*0.07));break;
+ case 'frog':tone(180,0.08,'square',0.18,T,140);tone(200,0.1,'square',0.18,T+0.12,150);break;
+ case 'fall':tone(900,0.4,'triangle',0.16,T,200);noise(0.4,0.3,T+0.35,900,250,null,'lowpass');break;
+ case 'eagle':tone(1800,0.5,'sawtooth',0.07,T,1200);break;
+ case 'scared':tone(1000,0.06,'square',0.08,T);break;
  case 'toss':tone(500,0.15,'triangle',0.2,T,1000);break;}}
 function updSnd(){const b=document.getElementById('snd');if(b)b.textContent=soundOn?'소리 켬':'소리 끔';if(MG)MG.gain.value=soundOn?1:0;}
 document.getElementById('snd').onclick=()=>{initAudio();soundOn=!soundOn;lsS('duckrace_sound',soundOn?'1':'0');updSnd();};updSnd();
@@ -210,8 +221,9 @@ $('bRe').onclick=async()=>{if(!confirm('이름을 다시 고를까요?'))return;
  if(room&&room.claims)delete room.claims[i];me=-1;onRoom({val:()=>room});};
 
 /* ---------- 경기 ---------- */
-const EVT=['다시 힘차게 헤엄치는 중','소용돌이에 빠졌어요! 빙글빙글','급류를 탔어요! 슝-','빵 조각을 먹었어요! 부스터 ON','갑자기 낮잠을 자요... zzz','방향을 착각해 거꾸로 가요!','거북이 택시를 탔어요!','잉어가 튀어올라 깜짝 놀랐어요!','휙! 앞 친구와 자리를 바꿨어요!'];
-const ZNN=['단풍 마을','황금 논밭','대나무 숲','강변 축제'];
+const EVT=['다시 힘차게 헤엄치는 중','소용돌이에 빠졌어요! 빙글빙글','급류를 탔어요! 슝-','빵 조각을 먹었어요! 부스터 ON','갑자기 낮잠을 자요... zzz','방향을 착각해 거꾸로 가요!','거북이 택시를 탔어요!','잉어가 튀어올라 깜짝 놀랐어요!','휙! 앞 친구와 자리를 바꿨어요!','풍선에 매달려 둥실 날아가요!','낚싯바늘에 걸렸어요! 뒤로 퐁당','바나나 껍질에 미끄러져 쭉!','오리 기차에 탔어요! 칙칙폭폭','백조 택시를 탔어요!','먹구름 아래에서 비를 맞아요','무지개! 신나게 헤엄쳐요','개구리가 머리 위로 폴짝!','폭포에서 풍덩 떨어졌어요!','독수리 그림자에 깜짝 놀랐어요!'];
+const ZNN=['단풍 마을','황금 논밭','연꽃 호수','대나무 숲','폭포 계곡','강변 축제'],ZFR=[0,.16,.32,.5,.66,.84,1],ZCL=['#e4c27c','#e8c547','#f4b6c8','#8fd06a','#a9b6c2','#f2a0a0'];
+const rLen=()=>(room&&room.len)||200;
 let S={},lastS=-1,lastK=0,gauge=0,bcd=0,target='me',evT=0;
 function initRace(){lastS=-1;gauge=0;bcd=0;S={};
  lastK=room&&room.state&&room.state.k?room.state.k[2]:0;
@@ -220,10 +232,10 @@ function initRace(){lastS=-1;gauge=0;bcd=0;S={};
 function evMsg(m){$('ev').textContent=m;evT=performance.now();}
 function updRace(s){S=s;const p=toArr(s.p),r=toArr(s.r),sc=toArr(s.s);if(!p.length)return;
  const ord=p.map((x,i)=>i).sort((a,b)=>{const ra=r[a]||0,rb=r[b]||0;if(ra&&rb)return ra-rb;if(ra)return -1;if(rb)return 1;return p[b]-p[a];});
- $('rank').textContent=(ord.indexOf(me)+1)+'등';$('dist').textContent=Math.round((p[me]||0)*200)+'m';$('hdr').textContent=ZNN[s.z|0]||'';
+ $('rank').textContent=(ord.indexOf(me)+1)+'등';$('dist').textContent=Math.round((p[me]||0)*rLen())+'m';$('hdr').textContent=ZNN[s.z|0]||'';
  const my=sc[me]|0;
  if(r[me]){if(lastS!==99){lastS=99;sfx('goal');evMsg('골인! '+r[me]+'번째로 들어왔어요');}}
- else if(my!==lastS){if(my||lastS>0)evMsg(EVT[my]);if(my)sfx([0,'vortex','rapid','bread','nap','rev','turtle','carp','swap'][my]);lastS=my;}
+ else if(my!==lastS){if(my||lastS>0)evMsg(EVT[my]);if(my)sfx([0,'vortex','rapid','bread','nap','rev','turtle','carp','swap','balloon','hook','banana','train','swan','rain','rainbow','frog','fall','scared'][my]);lastS=my;}
  toArr(s.h).forEach(h=>{if(h&&h[0]===me&&h[1]!==me){evMsg((names[h[1]]||'친구')+'이(가) 내 오리를 응원했어요!');sfx('heart');}});
  if(s.k&&s.k[2]!==lastK){lastK=s.k[2];const e=s.k[0],th=s.k[1];if(th===me&&e!==me)sfx('bread');if(th===me&&e!==me)evMsg('내 빵 조각을 '+(names[e]||'친구')+' 오리가 먹었어요!');}}
 $('tme').onclick=()=>{target='me';$('tme').className='on';$('tfr').className='';$('fr').classList.add('hidden');};
@@ -237,14 +249,14 @@ map.onclick=e=>{if(me<0)return;if(bcd>0){evMsg('빵 조각은 '+Math.ceil(bcd)+'
  if(py<6||py>30){evMsg('강 위를 눌러 주세요');return;}
  const p=Math.max(0,Math.min(1,(px-4)/150)),y=Math.max(0,Math.min(1,(py-7)/20));bcd=8;
  db.ref('rooms/'+code+'/breads').push({p,y,from:me,uid}).catch(()=>{});sfx('toss');
- evMsg(Math.round(p*200)+'m 지점에 빵 조각을 던졌어요! 누가 먹을까요?');};
+ evMsg(Math.round(p*rLen())+'m 지점에 빵 조각을 던졌어요! 누가 먹을까요?');};
 function drawMap(){const p=toArr(S.p),n=Math.max(2,p.length||names.length);
  R(mc,0,0,160,36,'#7cc04a');R(mc,0,6,160,24,'#3c9fdc');R(mc,0,6,160,1,'#62bdeb');R(mc,0,29,160,1,'#62bdeb');
- [[0,'#e4c27c',43],[43,'#e8c547',83],[83,'#8fd06a',121],[121,'#f2a0a0',156]].forEach(z=>R(mc,z[0]+4,1,z[2]-z[0],4,z[1]));
+ for(let i=0;i<6;i++){const a=4+ZFR[i]*150,b=4+ZFR[i+1]*150;R(mc,a,1,b-a,4,ZCL[i]);}
  for(let r=0;r<12;r++)R(mc,154,6+r*2,2,1,r%2?'#fff':'#3b2412');
  toArr(S.b).forEach(b=>{if(!b)return;const x=4+b[0]*150,y=7+b[1]*20;R(mc,x-1,y-1,4,3,b[2]===me?'#e5484d':'#3b2412');R(mc,x,y,2,1,'#f0c27a');});
- p.forEach((v,i)=>{if(i===me)return;R(mc,4+v*150,7+i/(n-1)*20,2,2,'#fff6d8');});
- if(me>=0){const x=4+(p[me]||0)*150,y=7+me/(n-1)*20;R(mc,x-2,y-2,6,6,'#3b2412');R(mc,x-1,y-1,4,4,(PAL[myLook.pal]||PAL[0])[1]);R(mc,x-1,y-5,4,2,'#e5484d');}}
+ const yy=toArr(S.y),yf=i=>(yy[i]!=null?yy[i]:i/(n-1));p.forEach((v,i)=>{if(i===me)return;R(mc,4+v*150,7+yf(i)*20,2,2,'#fff6d8');});
+ if(me>=0){const x=4+(p[me]||0)*150,y=7+yf(me)*20;R(mc,x-2,y-2,6,6,'#3b2412');R(mc,x-1,y-1,4,4,(PAL[myLook.pal]||PAL[0])[1]);R(mc,x-1,y-5,4,2,'#e5484d');}}
 
 /* ---------- 결과 ---------- */
 function showDone(v){show('sDone');const o=toArr(v.result),rk=o.indexOf(me)+1,m=v.mode||'all';
