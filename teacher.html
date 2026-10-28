@@ -676,7 +676,7 @@ function kDraw(){const c=kc,G=kg(),W=KW;
  const hy=KRAIL+3+kL;R(c,kx,KRAIL+3,1,kL,'#3b2412');R(c,kx-5,hy,11,5,'#3b2412');R(c,kx-4,hy+1,9,3,'#c4c8cf');R(c,kx-4,hy+1,9,1,'#fff');
  const a=kOpen;for(const s of [-1,1]){for(let k=0;k<6;k++)R(c,kx+s*(3+a*k*0.7)-(s<0?1:0),hy+5+k,2,1,'#3b2412');R(c,kx+s*(3+a*4.2)-(s<0?2:-1)*(1-a)-(s<0?0:1),hy+11,3,1,'#3b2412');}
  kp.forEach(p=>R(c,p.x,p.y,p.k==='c'?2:1,p.k==='c'?2:1,p.k==='c'?p.c:'#fff'));
- c.globalAlpha=0.16;for(let k=0;k<Math.floor(W/140)+1;k++){for(let i=0;i<62;i++){const x=80+k*140+i*0.45;R(c,x,32+i,6,1,'#fff');R(c,x+9,32+i,2,1,'#fff');}}c.globalAlpha=1;
+ c.globalAlpha=0.16;for(let k=0;k<Math.floor(W/140)+1;k++){for(let i=0;i<62;i++){const x=80+k*140+i*0.45;if(x+11>G.GX1-3)continue;R(c,x,32+i,6,1,'#fff');R(c,x+9,32+i,2,1,'#fff');}}c.globalAlpha=1;
  R(c,0,160,W,20,'#b8352a');R(c,0,160,W,2,'#3b2412');R(c,W/2-11,165,22,10,'#3b2412');R(c,W/2-10,166,20,8,'#2b1d10');R(c,W/2-8,168,16,1,'#ffd93d');
  R(c,W-90,163,6,10,'#3b2412');R(c,W-91,161,8,5,'#e5484d');R(c,W-60,166,10,8,'#3b2412');R(c,W-59,167,8,6,'#30a46c');R(c,W-42,166,10,8,'#3b2412');R(c,W-41,167,8,6,'#3e63dd');
  if(kS==='result'&&kT){kbc.clearRect(0,0,30,20);const b=Math.sin(kt*5)>0?0:1;duck(kbc,8,6+b,kT.lk,false,kt,null);const f=Math.floor(kt*6)%2;[[3,4],[25,6],[5,16],[24,15]].forEach((q,j)=>R(kbc,q[0],q[1],1,1,(j+f)%2?'#ffe14d':'#fff'));}}
