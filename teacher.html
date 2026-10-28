@@ -667,7 +667,7 @@ function kDraw(){const c=kc,G=kg(),W=KW;
  R(c,0,0,W,KH,'#d9472b');
  R(c,10,4,W-20,22,'#3b2412');R(c,12,6,W-24,18,'#2b1d10');
  const nL=Math.floor((W-28)/8);for(let k=0;k<nL;k++){const on=(k+Math.floor(kt*6))%3===0;R(c,14+k*8,7,3,2,on?'#ffe14d':'#7a5a2a');R(c,14+k*8,21,3,2,on?'#ffe14d':'#7a5a2a');}
- R(c,G.GX0,28,G.GX1-G.GX0,132,'#3b2412');R(c,G.GX0+2,30,G.GX1-G.GX0-4,128,'#bfe6f5');for(let y=34;y<96;y+=8)for(let x=G.GX0+4+(y/8%2)*8;x<G.GX1-2;x+=16)R(c,x,y,8,4,'#cdeef9');
+ R(c,G.GX0,28,G.GX1-G.GX0,132,'#3b2412');R(c,G.GX0+2,30,G.GX1-G.GX0-4,128,'#bfe6f5');for(let y=34;y<96;y+=8)for(let x=G.GX0+4+(y/8%2)*8;x<G.GX1-2;x+=16)R(c,x,y,Math.min(8,G.GX1-2-x),4,'#cdeef9');
  R(c,G.GX0+2,98,G.GX1-G.GX0-4,60,'#3c9fdc');for(let x=G.GX0+2;x<G.GX1-2;x+=6)R(c,x,98+(Math.floor(kt*3+x/6)%2),4,1,'#8fd8f5');
  for(let k=0;k<Math.floor(W/10);k++){const x=G.GX0+2+((k*41+kt*8)%(G.GX1-G.GX0-4)),y=104+(k*13)%50;R(c,x,y,3,1,'#62bdeb');}
  R(c,G.CH0,98,G.CH1-G.CH0,60,'#2f86c4');R(c,G.CH1,60,3,98,'#3b2412');R(c,G.CH1+1,60,1,98,'#8fd8f5');R(c,G.CH0+2,150,G.CH1-G.CH0-4,8,'#2b1d10');R(c,G.CH0+4,151,G.CH1-G.CH0-8,6,'#111');
