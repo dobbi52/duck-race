@@ -360,12 +360,21 @@ function sfx(n){if(!AC||!soundOn)return;const T=AC.currentTime;if(sfxLast[n]&&T-
  case 'toss':tone(500,0.15,'triangle',0.2,T,1000);break;}}
 function updSnd(){const b=document.getElementById('snd'),b2=document.getElementById('ksnd');if(b)b.textContent=soundOn?'소리 켬':'소리 끔';if(b2)b2.textContent=soundOn?'소리 켬':'소리 끔';if(MG)MG.gain.value=soundOn?1:0;}
 const SONGS={lobby:{bpm:96,wave:'triangle',mel:[72,0,76,0,79,0,76,0,74,0,77,0,76,74,72,0,69,0,72,0,76,0,74,72,71,0,74,0,72,0,0,0],bass:[48,53,45,43],hat:false},
- race:{bpm:150,wave:'square',mel:[67,67,74,0,71,72,74,0,76,74,72,71,72,0,69,0,67,67,74,0,71,72,74,76,79,78,76,74,76,0,74,0],bass:[43,48,45,50],hat:true}};
+ race:{name:'신나는 강물',bpm:150,wave:'square',mel:[67,67,74,0,71,72,74,0,76,74,72,71,72,0,69,0,67,67,74,0,71,72,74,76,79,78,76,74,76,0,74,0],bass:[43,48,45,50],hat:true},
+ circus:{name:'오리 서커스',bpm:138,wave:'square',mel:[76,75,76,0,72,0,67,0,69,68,69,0,65,0,60,0,64,63,64,0,67,0,72,0,71,0,74,0,72,0,0,0,76,75,76,0,79,0,76,0,74,73,74,0,77,0,74,0,72,71,72,0,76,0,79,0,74,0,71,0,72,0,0,0],bass:[48,53,48,43,48,50,43,48],bm:'oom',hat:false},
+ sports:{name:'운동회 질주',bpm:168,wave:'square',mel:[67,0,67,71,74,0,74,0,72,71,69,71,72,0,69,0,66,0,66,69,72,0,72,0,71,69,67,69,71,0,74,0],bass:[43,48,50,43],hat:true,kick:true,snare:true},
+ chip:{name:'8비트 모험',bpm:150,wave:'square',mel:[69,72,76,81,79,76,72,76,67,71,74,79,77,74,71,74,65,69,72,77,76,72,69,72,64,68,71,76,74,71,68,71],bass:[45,43,41,40],hat:true,kick:true},
+ fest:{name:'강변 축제',bpm:132,wave:'triangle',mel:[72,74,76,0,79,76,74,0,72,74,76,79,81,0,79,0,76,79,81,84,81,79,76,0,74,76,74,72,69,0,72,0],bass:[48,45,43,48],hat:false,clap:true,kick:true}};
+const RACE_SONGS=['race','circus','sports','chip','fest'];let lastRace='';
 let bgm=null,bgmStep=0,bgmNext=0,bgmFast=false;
-function setBgm(n){bgm=n?SONGS[n]:null;bgmStep=0;bgmNext=AC?AC.currentTime+0.1:0;bgmFast=false;}
+function setBgm(n){if(n==='race'){const op=RACE_SONGS.filter(x=>x!==lastRace);n=op[Math.floor(Math.random()*op.length)];lastRace=n;}bgm=n?SONGS[n]:null;bgmStep=0;bgmNext=AC?AC.currentTime+0.1:0;bgmFast=false;}
 setInterval(()=>{if(!AC||!bgm)return;const spb=60/(bgm.bpm*(bgmFast?1.2:1))/2;if(bgmNext<AC.currentTime)bgmNext=AC.currentTime+0.05;
- while(bgmNext<AC.currentTime+0.25){const i=bgmStep%32,m=bgm.mel[i];if(m)tone(mf(m),spb*0.9,bgm.wave,0.1,bgmNext,null,BG);
-  if(i%2===0){const r=bgm.bass[Math.floor(i/8)];tone(mf(i%4===0?r:r+12),spb*0.9,'triangle',0.2,bgmNext,null,BG);}
+ while(bgmNext<AC.currentTime+0.25){const L=bgm.mel.length,i=bgmStep%L,m=bgm.mel[i],r=bgm.bass[Math.floor(i/8)%bgm.bass.length];if(m)tone(mf(m),spb*0.9,bgm.wave,0.1,bgmNext,null,BG);
+  if(bgm.bm==='oom'){if(i%4===0)tone(mf(r-12),spb*0.9,'triangle',0.24,bgmNext,null,BG);else if(i%4===2){tone(mf(r+4),spb*0.6,'square',0.05,bgmNext,null,BG);tone(mf(r+7),spb*0.6,'square',0.05,bgmNext,null,BG);}}
+  else if(i%2===0){tone(mf(i%4===0?r:r+12),spb*0.9,'triangle',0.2,bgmNext,null,BG);}
+  if(bgm.kick&&i%4===0)tone(140,0.12,'sine',0.32,bgmNext,45,BG);
+  if(bgm.snare&&i%4===2)noise(0.09,0.1,bgmNext,1900,null,BG,'bandpass');
+  if(bgm.clap&&(i%8===2||i%8===6)){noise(0.06,0.09,bgmNext,1400,null,BG,'bandpass');noise(0.05,0.07,bgmNext+0.02,1600,null,BG,'bandpass');}
   if(bgm.hat&&i%2===1)noise(0.04,0.05,bgmNext,7000,null,BG,'highpass');bgmNext+=spb;bgmStep++;}},50);
 function fanfare(){if(!AC)return;const T=AC.currentTime+0.05;[72,76,79,84].forEach((m,k)=>tone(mf(m),0.14,'square',0.16,T+k*0.12,null,BG));tone(mf(84),0.6,'square',0.16,T+0.5,null,BG);tone(mf(79),0.6,'triangle',0.14,T+0.5,null,BG);}
 $('snd').onclick=()=>{initAudio();soundOn=!soundOn;lsS('duckrace_sound',soundOn?'1':'0');updSnd();};
