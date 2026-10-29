@@ -283,7 +283,7 @@ textarea{width:100%;height:170px;font-size:15px;padding:8px;border:3px solid var
       <div class="rk" id="rk"></div>
       <div class="ctl">
         <span class="glen" id="glen"><button class="btn lnb" data-l="200">200m</button><button class="btn lnb" data-l="350">350m</button><button class="btn lnb" data-l="500">500m</button></span><span class="gsep"></span>
-        <button class="btn gb" data-m="all">전체 순위</button><button class="btn gb" data-m="first">1등만</button><button class="btn gb" data-m="last">꼴등만</button>
+        <button class="btn gb" data-m="all">전체 순위</button><button class="btn gb" data-m="first">1등만</button><button class="btn gb" data-m="last">꼴등만</button><span class="gsep tgb"></span><button class="btn tgb" data-t="num">번호표</button><button class="btn tgb" data-t="name">이름표</button>
         <span class="legend" id="legend"></span><span class="sp"></span>
         <button class="btn go" id="bStart">출발!</button>
         <button class="btn go hidden" id="bAgain">다시 경기</button>
@@ -620,6 +620,7 @@ function heart(c,x,y){const s=[".k.k.","kRkRk","kRRRk",".kRk.","..k.."];s.forEac
 /* ---------- 방 ---------- */
 function roomData(){const o={host:uid,createdAt:Date.now(),status:phase==='done'?'done':(phase==='race'||phase==='count')?'racing':'lobby',mode,looks:looks,claims:claims,nums:nums,len:LEN};if(phase!=='done')o.names=names;else o.result=resultOrder;return o;}
 $('mk').onclick=makeRoom;
+document.querySelectorAll('.tgb[data-t]').forEach(b=>b.onclick=()=>setTagMode(b.dataset.t==='name'));
 setTimeout(()=>setJoin(SOLO?'solo':'all'),0);
 const DEMO=new URLSearchParams(location.search).has('demo');
 if(DEMO){$('mk').textContent='연습 시작';if(!parseNames().length)$('names').value=['김하늘','이도윤','박서연','최민준','정유진','한지호','윤서아','강하준','조예린','임시우','오지안','신도현','권나윤','황준서','송다은','류건우','배수아','전하람','고은찬','문채원','서지후','안소율','홍태윤','노아린','백승민'].join('\n');cnt();err('연습 모드예요. 서버 없이 화면만 미리 볼 수 있어요.');}
@@ -702,7 +703,10 @@ function say(m,k){msg.classList.remove('cd');msg.style.display='none';clearTimeo
 const ITEMS=[['boost','🚀','부스터'],['shield','🛡️','방패'],['luck','🍀','행운'],['turtle','🐢','거북 친구']];
 const BAD={vortex:1,nap:1,rev:1,carp:1,hook:1,frog:1,scared:1,stun:1};
 const isReal=i=>!!claims[i]&&claims[i]!=='demo';
-function setTag(o){const tg=tags[o.i];if(!tg)return;let ic='';if(o.item){}else{const l=looks[o.i];if(l&&l.item!=null&&claims[o.i])ic=ITEMS[l.item][1];}tg.textContent=(nums[o.i]||o.i+1)+(ic?' '+ic:'');}
+let TAGNAME=false,SHORT=[];
+function shortNames(){const sh=names.map(n=>{n=String(n).trim();if(/^[가-힣]{4}$/.test(n)&&/^(남궁|제갈|선우|독고|황보|사공|서문|동방|어금|망절|장곡)/.test(n))return n.slice(2);return /^[가-힣]{3,4}$/.test(n)?n.slice(1):n;});const cnt={};sh.forEach(x=>cnt[x]=(cnt[x]||0)+1);SHORT=sh.map((x,i)=>cnt[x]>1?names[i]:x);}
+function setTagMode(on){TAGNAME=on&&pickMode==='name'&&names.some(n=>!/^\d+번$/.test(n));document.querySelectorAll('.tgb[data-t]').forEach(b=>b.classList.toggle('on',(b.dataset.t==='name')===TAGNAME));d.forEach(setTag);}
+function setTag(o){const tg=tags[o.i];if(!tg)return;let ic='';if(o.item){}else{const l=looks[o.i];if(l&&l.item!=null&&claims[o.i])ic=ITEMS[l.item][1];}tg.textContent=(TAGNAME?(SHORT[o.i]||names[o.i]):(nums[o.i]||o.i+1))+(ic?' '+ic:'');}
 function bubble(o,txt,dur){const b=bbs[o.i];if(!b)return;b.textContent=txt;b.style.display='block';o.quackHide=t+dur;}
 function guard(o,quiet){if(o.immune>t)return true;
  if(o.item==='shield'&&!o.iu){o.iu=1;o.immune=t+1.2;o.spark=t+1.2;setTag(o);bubble(o,o.n+' 🛡️ 방패!',1.4);sfx('shield');if(!quiet)say(o.n+' 오리, 방패로 막아냈다!');return true;}
@@ -820,6 +824,7 @@ function showGame(){setBgm('lobby');$('setup').classList.add('hidden');$('game')
  if(!(SOLO&&!DEMO))try{new QRCode($('qr'),{text:url,width:256,height:256,correctLevel:QRCode.CorrectLevel.M});}catch(e){}
  document.querySelectorAll('#stage .tg,#stage .bb').forEach(e=>e.remove());tags=[];bbs=[];
  names.forEach((n,i)=>{const a=document.createElement('div');a.className='tg';a.textContent=nums[i]||i+1;st.appendChild(a);tags.push(a);const b=document.createElement('div');b.className='bb';st.appendChild(b);bbs.push(b);});
+ shortNames();setTagMode(pickMode==='name');document.querySelectorAll('.tgb').forEach(b=>b.style.display=pickMode==='name'?'':'none');
  $('lobby').classList.remove('hidden');updPanel();fit();}
 let peekX=null,peekT=null;
 function mmWorld(e){const r=mm.getBoundingClientRect(),x=(e.clientX-r.left)/r.width*320;return Math.max(0,Math.min(WW,(x-4)/312*WW));}
