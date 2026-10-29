@@ -1026,7 +1026,7 @@ function kUI(){$('kleft').textContent='남은 오리 '+kd.filter(d=>!d.out).leng
 function openClaw(){const sl=buildList();if(sl.length<2)return err(gFilter!=='all'?'참가하는 친구가 두 명 이상이어야 해요. 남녀 정하기를 확인해 주세요':'두 명 이상 참가해야 해요');err('');
  if(pickMode==='name'){const k=$('cname').value.trim()||'우리 반';const prev=classes[k]||{};classes[k]={names:parseNames(),looks:prev.looks||{},gender:prev.gender||{}};saveClasses();fillSel(k);lsSet('duckrace_lastclass',k);}
  $('kcls').textContent=pickMode==='num'?'번호 뽑기':($('cname').value.trim()||'우리 반');
- $('setup').classList.add('hidden');$('claw').classList.remove('hidden');kOn=true;kFit();kReset();setBgm('lobby');}
+ $('setup').classList.add('hidden');$('claw').classList.remove('hidden');kOn=true;kFit();kReset();setBgm(null);}
 function closeClaw(){kOn=false;setBgm(null);$('claw').classList.add('hidden');$('setup').classList.remove('hidden');}
 $('mkClaw').onclick=openClaw;$('kback').onclick=closeClaw;$('krs').onclick=()=>{if(kS==='idle'||kS==='result')kReset();};
 $('kex').onclick=e=>{kEx=!kEx;e.target.classList.toggle('on',kEx);};
